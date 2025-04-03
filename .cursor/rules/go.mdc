@@ -1,0 +1,317 @@
+---
+description: 
+globs: *.go
+alwaysApply: false
+---
+# Go Code Style and Structure
+
+## Project Structure
+
+This project follows the standard Go project layout:
+
+- `/cmd` - Main application entry points
+- `/internal` - Private application and library code
+  - `/api` - HTTP API controllers
+  - `/service` - Business logic layer
+  - `/middleware` - HTTP middleware
+  - `/model` - Data models
+  - `/util` - Utility functions
+
+## Naming Conventions
+
+- Package names should be lowercase words, without underscores or mixed case.
+- Use CamelCase for naming.
+  - Exported functions, variables, constants, and types should start with an uppercase letter (e.g., `PublicFunction`).
+  - Unexported functions, variables, constants, and types should start with a lowercase letter (e.g., `privateVariable`).
+- Interface names often end with "er" (e.g., `Reader`, `Writer`).
+- Controller structs should end with "Controller".
+- Constants should be in all uppercase with underscores separating words (e.g., `MAX_CONNECTIONS`).
+
+## Code Organization
+
+- Each Controller should have a corresponding Service.
+- The Controller is responsible for handling HTTP requests and input validation.
+- The Controller should implement the `github.com/sven-victor/ez-console/server.Controller` interface and be registered via `server.RegisterControllers`. Example:
+
+```go
+package api
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sven-victor/ez-console/server"
+)
+
+type EchoController struct {
+}
+
+func (c *EchoController) RegisterRoutes(router *gin.RouterGroup) {
+    echoRouter := router.Group("echo")
+	echoRouter.GET("", c.Get)
+}
+
+func (c *EchoController) Get(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+/*
+import (
+    ldap "github.com/go-ldap/ldap/v3"
+)
+// service.LDAPClient
+type LDAPClient struct {
+    *ldap.Conn
+}
+
+
+// server.Service
+type Service interface {
+	// LDAP Service
+	GetLDAPSession(ctx context.Context) (*service.LDAPClient, error)
+	GetLDAPSettings(ctx context.Context) (*model.LDAPSettings, error)
+	TestLDAPConnection(ctx context.Context, ldapSettings model.LDAPSettings, username, password string) (*model.LDAPTestResponse, error)
+
+	// Setting Service
+	FilterLDAPEntries(ctx context.Context, baseDN string, filter string, attributes []string) ([]*ldap.Entry, error)
+	GetSettingsMap(ctx context.Context) (map[string]string, error)
+}
+*/
+func init() {
+	server.RegisterControllers(func(svc server.Service) server.Controller {
+		return &EchoController{}
+	})
+}
+```
+
+- After registering a Controller, the framework will automatically call its `RegisterRoutes` method to register the routes with the Gin engine.
+- Routes registered via `RegisterRoutes` require login by default.
+- The Service is responsible for business logic implementation and database queries.
+- All API endpoints should use a RESTful design style.
+- Models (types) that need to be synchronized with the database should be registered using `server.RegisterModels()`. The framework will then automatically perform an `AutoMigrate` operation.
+
+## Commenting Conventions
+
+- All exported functions, types, and variables should have comments.
+- Use full sentences for comments, starting with the function/method/variable name.
+- Complex logic should have inline comments for explanation.
+
+## Permission Control
+
+- Insert permission middleware when registering routes. Code example:
+
+```go
+package api
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sven-victor/ez-console/server"
+	"github.com/sven-victor/ez-console/pkg/middleware"
+)
+
+type ApplicationController struct {
+}
+
+func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
+    users := router.Group("/applications")
+	router.GET("", middleware.RequirePermission("applications:view"), c.GetApplications)
+	router.POST("roles", middleware.RequirePermission("applications:roles:create"), c.CreateApplicationRole)
+}
+
+func (c *ApplicationController) GetApplications(ctx *gin.Context) {
+    // example code
+}
+func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
+    // example code
+}
+
+func init() {
+	server.RegisterControllers(func(svc server.Service) server.Controller {
+		return &ApplicationController{}
+	})
+    
+	middleware.RegisterPermission("Application Management", "Manage application creation, editing, deletion, and role assignment", []model.Permission{
+		{
+			Code:        "applications:view",
+			Name:        "View applications",
+			Description: "View applications list and details",
+		},
+		{
+			Code:        "applications:roles:create",
+			Name:        "Create application roles",
+			Description: "Create application roles",
+		},
+	})
+}
+```
+
+## Error Handling
+
+- Errors should be returned, not panicked.
+- Use custom error types where appropriate.
+- The API layer should convert errors to appropriate HTTP responses using `util.RespondWithError`. Example:
+
+```go
+userID := ctx.Param("id")
+if userID == "" {
+    util.RespondWithError(ctx, util.ErrorResponse{
+        Code: "E4001",
+        Err:  errors.New("User ID cannot be empty"),
+    })
+    return
+}
+var filters service.AuditLogFilters
+if err := ctx.BindQuery(&filters); err != nil {
+    util.RespondWithError(ctx, util.ErrorResponse{
+        Code:    "E4001",
+        Err:     err,
+        Message: "failed to parse query parameters",
+    })
+    return
+}
+
+logs, total, err := c.service.GetAuditLogs(ctx, filters, page, pageSize)
+if err != nil {
+    util.RespondWithError(ctx, util.ErrorResponse{
+        Code:    "E5001",
+        Err:     err,
+        Message: "failed to get audit logs",
+    })
+    return
+}
+```
+- Returned error messages should be in English.
+
+## Dependency Injection
+
+- Inject dependencies through constructors.
+- Avoid global variables and singletons.
+
+## Logging Guidelines
+
+- Use structured logging.
+- Error logs should include contextual information.
+- Use `github.com/go-kit/log` for logging output.
+- For the same request/task flow, the trace ID in the logs should remain consistent. This is achieved by getting/generating a trace ID at the entry point (controlled via middleware in Gin), creating a logger, and passing it into downstream functions via the context.
+- Downstream functions get the logger via `logger := log.GetContextLogger(ctx)`.
+- Common fields for logging include:
+  - `msg`: The log message
+  - `err`: The error message
+- Log output should be in English.
+
+## Database Operations
+
+- Obtain a database connection via `server.DBSession`.
+- The LDAP connection can be obtained during `RegisterControllers` and passed to the Service. Example:
+
+```go
+// service.go
+package service
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/sven-victor/ez-console/pkg/service"
+)
+
+type TestLDAPConnService struct {
+    service service.Service
+}
+
+func (s *TestLDAPConnService) TestLDAPConn(ctx context.Context) error {
+	session, err := s.service.GetLDAPSession(ctx)
+    if err != nil {
+        return err
+    }
+    defer session.Close()
+    _ = session.IsClosing()
+	return nil
+}
+
+func NewTestLDAPConnService(svc service.Service) *TestLDAPConnService{
+    return &TestLDAPConnService{service: svc}
+}
+
+// api.go
+package api
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sven-victor/ez-auth/internal/service"
+	"github.com/sven-victor/ez-console/server"
+)
+
+type LDAPTestController struct {
+    svc *service.TestLDAPConnService
+}
+
+func (c *LDAPTestController) RegisterRoutes(router *gin.RouterGroup) {
+	router.GET("/echo", c.Get)
+}
+
+func (c *LDAPTestController) Get(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+func init() {
+	server.RegisterControllers(func(svc server.Service) server.Controller {
+		return &LDAPTestController{
+            svc: service.NewTestLDAPConnService(svc),
+        }
+	})
+}
+
+// GetLDAPSession(ctx context.Context) (clientsldap.Conn, error)
+// clientsldap.Conn
+type Conn interface {
+	GetOptions() Options
+	IsClosing() bool
+	TLSConnectionState() (tls.ConnectionState, bool)
+	UnauthenticatedBind(username string) error
+	ExternalBind() error
+	NTLMUnauthenticatedBind(domain, username string) error
+	Unbind() error
+	ModifyWithResult(request *ldap.ModifyRequest) (*ldap.ModifyResult, error)
+	Start()
+	StartTLS(config *tls.Config) error
+	Close() error
+	SimpleBind(simpleBindRequest *ldap.SimpleBindRequest) (*ldap.SimpleBindResult, error)
+	Bind(username, password string) error
+	ModifyDN(modifyDNRequest *ldap.ModifyDNRequest) error
+	SetTimeout(t time.Duration)
+	Add(addRequest *ldap.AddRequest) error
+	Del(delRequest *ldap.DelRequest) error
+	Modify(modifyRequest *ldap.ModifyRequest) error
+	Compare(dn, attribute, value string) (bool, error)
+	PasswordModify(passwordModifyRequest *ldap.PasswordModifyRequest) (*ldap.PasswordModifyResult, error)
+	Search(searchRequest *ldap.SearchRequest) (*ldap.SearchResult, error)
+	SearchWithPaging(searchRequest *ldap.SearchRequest, pagingSize uint32) (*ldap.SearchResult, error)
+}
+```
+- Use GORM for database operations.
+- Database migrations are executed at application startup.
+
+## Configuration Management
+
+- Use Viper for configuration handling.
+- Support YAML and environment variable configurations.
+
+## Data Type Structure
+- The `Base` field includes the following fields:
+  - `ID`: Primary key ID, an auto-incrementing int type, mainly for database storage. It should not be used for querying, filtering, etc., in other processing logic, and its value will not be returned in API responses.
+  - `ResourceID`: Resource ID, a string, an automatically generated UUID. When returned in an HTTP response, the field name is serialized to `id`. During deserialization, the `id` field is also deserialized to `ResourceID`. This field is used to replace the original int type `id` field.
+  - `CreatedAt`: The creation time of the data/resource, which should not be modified after the data/resource is created.
+  - `UpdatedAt`: The modification time of the data/resource, which should be updated every time the data/resource changes.
+  - `DeletedAt`: The deletion time of the data/resource. If this field is null, it means the data is not deleted; otherwise, it is considered deleted.
+- Other data types that need to be stored in the database should embed the `Base` field anonymously.
+
+## Audit Logging
+- For all creation, modification, and user login operations, log key information to the database.
+- For writing audit logs, use the `Service.StartAudit` method whenever possible.
+- The definition of the `StartAudit` method is: `StartAudit(ctx *gin.Context, resourceID string, handleFunc func(auditLog *model.AuditLog) error, withOptions ...withStartAuditOptions) error`. The `handleFunc` is used to perform the actual operation. The `userID`, `username`, `ip`, `userAgent`, etc., required for the audit log are all obtained from the `ctx`.
+

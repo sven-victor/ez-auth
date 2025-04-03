@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+## Project Description
+- This is a user authorization management system with a backend service written in Golang. The user and application data sources are based on LDAP, while other data is stored in a relational database (such as SQLite, MySQL, etc.).
+- The backend framework of this system relies on github.com/sven-victor/ez-console, which already supports features like login, user management, authentication, audit logs, and system settings.
+- All code comments and returned error messages must be in English.
+- The system needs to implement the following functions:
+  - Application Management: Create, delete, and modify applications. Applications are implemented based on LDAP, with each application being an LDAP entry. In addition to LDAP, other application data (such as icons, status, roles, etc.) should be stored in a relational database.
+  - User Management: Create, delete, and modify LDAP user entries.
+  - User Authorization: Implement user authorization based on LDAP's memberOf attribute. Additionally, it needs to support assigning roles when authorizing users to applications.
+  - OIDC Provider: The system supports acting as an OIDC Provider for third-party systems. When returning user information, it should additionally return a role field based on the authorization information.
+
+## HTTP Handling
+- Use the Gin framework to handle HTTP requests.
+- Use ShouldBindJSON for request validation.
+- For list query interfaces, the request parameters should include at least the following fields:
+  - current: int type, representing the page number to query.
+  - page_size: int type, representing the number of rows per page.
+  - search: for keyword search.
+- The id field must be a non-empty string in UUID format.
+
+## HTTP Response Message Samples
+- Error messages must be in English.
+- Sample format for failed/error responses:
+```json
+{
+  "code": "E4012", // status code
+  "err": "Invalid auth token"  // error message
+}
+```
+- Sample format for list responses:
+```json
+{
+  "code": "0", // status code, 0 means normal
+  "data": [], // returned data
+  "total": 100, // total number of rows
+  "current": 1, // current page number
+  "page_size": 10 // number of rows per page
+}
+```
+
+- Sample format for a single data record response (no total, current, page_size):
+```json
+{
+  "code": "0", // status code, 0 means normal
+  "data": {} // returned data
+}
+```
