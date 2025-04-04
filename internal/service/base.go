@@ -16,6 +16,7 @@ import (
 func init() {
 	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemHomePage, "/ui/", "System home page")
 	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemName, "EZ-Auth", "System name")
+	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemLogo, "/ui/logo.png", "System logo")
 }
 
 type BaseService struct {
