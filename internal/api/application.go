@@ -71,6 +71,14 @@ func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 	keywords := ctx.DefaultQuery("keywords", "")
 	status := ctx.DefaultQuery("status", "")
 
+	if page < 1 {
+		page = 1
+	}
+
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
 	apps, total, err := c.svc.ListApplications(ctx, keywords, status, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
