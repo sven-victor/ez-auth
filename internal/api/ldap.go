@@ -61,8 +61,9 @@ func (c *LDAPController) GetLDAPSettings(ctx *gin.Context) {
 		util.RespondWithError(ctx, err)
 		return
 	}
-
-	settings.BindPassword.UpdateSecret(util.GenerateRandomPassword(128))
+	if settings.BindPassword != nil {
+		settings.BindPassword.UpdateSecret(util.GenerateRandomPassword(128))
+	}
 	settings.ClientKey = nil
 
 	applicationBaseDN, err := c.svc.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
