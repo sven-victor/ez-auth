@@ -21,7 +21,7 @@ export default {
       saveError: 'LDAP设置更新失败',
       testError: 'LDAP连接测试失败: {{error}}',
       importSuccess: 'LDAP用户导入成功',
-      importError: 'LDAP用户导入失败',
+      importError: 'LDAP用户导入失败: {{error}}',
       serverUrlRequired: '请输入LDAP服务器URL',
       bindDnRequired: '请输入绑定DN',
       bindPasswordRequired: '请输入绑定密码',

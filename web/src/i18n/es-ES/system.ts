@@ -21,7 +21,7 @@ export default {
       saveError: 'Error al actualizar la configuración de LDAP',
       testError: 'Error al probar la conexión LDAP: {{error}}',
       importSuccess: 'Usuarios LDAP importados correctamente',
-      importError: 'Error al importar usuarios LDAP',
+      importError: 'Error al importar usuarios LDAP: {{error}}',
       serverUrlRequired: 'Ingrese la URL del servidor LDAP',
       bindDnRequired: 'Ingrese el DN de enlace',
       bindPasswordRequired: 'Ingrese la contraseña de enlace',

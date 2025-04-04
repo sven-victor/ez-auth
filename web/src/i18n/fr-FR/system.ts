@@ -21,7 +21,7 @@ export default {
       saveError: 'Échec de la mise à jour des paramètres LDAP',
       testError: 'Échec du test de la connexion LDAP : {{error}}',
       importSuccess: 'Utilisateurs LDAP importés avec succès',
-      importError: 'Échec de l\'importation des utilisateurs LDAP',
+      importError: 'Échec de l\'importation des utilisateurs LDAP : {{error}}',
       serverUrlRequired: 'Veuillez saisir l\'URL du serveur LDAP',
       bindDnRequired: 'Veuillez saisir le DN de liaison',
       bindPasswordRequired: 'Veuillez saisir le mot de passe de liaison',

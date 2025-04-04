@@ -21,7 +21,7 @@ export default {
       saveError: 'فشل تحديث إعدادات LDAP',
       testError: 'فشل اختبار اتصال LDAP: {{error}}',
       importSuccess: 'تم استيراد مستخدمي LDAP بنجاح',
-      importError: 'فشل استيراد مستخدمي LDAP',
+      importError: 'فشل استيراد مستخدمي LDAP: {{error}}',
       serverUrlRequired: 'الرجاء إدخال عنوان URL لخادم LDAP',
       bindDnRequired: 'الرجاء إدخال DN للربط',
       bindPasswordRequired: 'الرجاء إدخال كلمة مرور الربط',

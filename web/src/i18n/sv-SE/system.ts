@@ -21,7 +21,7 @@ export default {
       saveError: 'Kunde inte uppdatera LDAP-inställningar',
       testError: 'Kunde inte testa LDAP-anslutning: {{error}}',
       importSuccess: 'LDAP-användare importerades',
-      importError: 'Kunde inte importera LDAP-användare',
+      importError: 'Kunde inte importera LDAP-användare: {{error}}',
       serverUrlRequired: 'Ange LDAP-server-URL',
       bindDnRequired: 'Ange bind-DN',
       bindPasswordRequired: 'Ange bind-lösenord',

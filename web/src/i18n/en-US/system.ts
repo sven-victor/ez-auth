@@ -21,7 +21,7 @@ export default {
       saveError: 'Failed to update LDAP settings',
       testError: 'Failed to test LDAP connection: {{error}}',
       importSuccess: 'LDAP users imported successfully',
-      importError: 'Failed to import LDAP users',
+      importError: 'Failed to import LDAP users: {{error}}',
       serverUrlRequired: 'Please enter the LDAP server URL',
       bindDnRequired: 'Please enter the bind DN',
       bindPasswordRequired: 'Please enter the bind password',
