@@ -808,6 +808,7 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 				[]string{ldapClient.GetOptions().UserAttr, ldapClient.GetOptions().EmailAttr, ldapClient.GetOptions().DisplayNameAttr, "entryUUID", "createTimestamp", "modifyTimestamp"},
 				nil,
 			)
+			level.Debug(logger).Log("msg", "search LDAP user", "userDN", userDN)
 			result, err := ldapClient.Search(searchReq)
 			if err != nil {
 				return fmt.Errorf("Failed to search LDAP user: %v", err)
@@ -815,6 +816,7 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 			if len(result.Entries) == 0 {
 				return fmt.Errorf("User not found: %s", userDN)
 			}
+			level.Info(logger).Log("msg", "found LDAP user, import to database", "userDN", userDN)
 			entry := result.Entries[0]
 			user := model.User{
 				Username: entry.GetAttributeValue(ldapClient.GetOptions().UserAttr),
@@ -830,7 +832,8 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 				if err != gorm.ErrRecordNotFound {
 					return fmt.Errorf("Failed to check existing user: %v", err)
 				}
-			} else if existingUser.ResourceID != "" {
+			}
+			if existingUser.ResourceID != "" {
 				// If already exists, return error
 				return fmt.Errorf("User already exists: %s", user.Username)
 			}
@@ -839,14 +842,16 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 					level.Error(logger).Log("msg", "Failed to check existing user", "err", err.Error())
 					return fmt.Errorf("failed to check existing user: %w", err)
 				}
-			} else if existingUser.ResourceID != "" {
+			}
+			if existingUser.ResourceID != "" {
 				// If username or email matches, bind
+				level.Info(logger).Log("msg", "user already exists, bind to LDAP", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
 				existingUser.LDAPDN = user.LDAPDN
 				if err := tx.Select("LDAPDN").Updates(&existingUser).Error; err != nil {
 					return fmt.Errorf("failed to update user: %w", err)
 				}
-
 			} else {
+				level.Info(logger).Log("msg", "user not exists, create", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
 				if err := tx.Create(&user).Error; err != nil {
 					return fmt.Errorf("Failed to create user: %v", err)
 				}
