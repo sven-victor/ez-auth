@@ -3,7 +3,7 @@ import { Button, Card, Input, Layout, List, Pagination, Typography } from 'antd'
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from 'ahooks';
-import { getApplications } from '@/api/application';
+import { getMySelfApplications } from '@/api/user';
 import { getApplicationDescription, getApplicationDisplayName } from '@/utils';
 import Avatar from '@/components/Avatar';
 import { AppstoreOutlined, ReloadOutlined, SearchOutlined, SwapOutlined, UserOutlined } from '@ant-design/icons';
@@ -81,8 +81,8 @@ const Home: React.FC = () => {
   ];
 
 
-  const { data, loading, run: runGetApplications } = useRequest(getApplications, {
-    defaultParams: [search, 'active', 1, 30]
+  const { data, loading, run: runGetApplications } = useRequest(getMySelfApplications, {
+    defaultParams: [search, 1, 30]
   });
 
   return <Layout style={{ minHeight: '100vh' }} className="site-layout">
@@ -119,10 +119,10 @@ const Home: React.FC = () => {
           <Input placeholder={tCommon('search', { defaultValue: 'Search' })} style={{ width: 200, }} onChange={(e) => {
             setSearch(e.target.value)
           }} onPressEnter={() => {
-            runGetApplications(search, 'active', 1, data?.page_size || 30)
+            runGetApplications(search, 1, data?.page_size || 30)
           }} suffix={<SearchOutlined />} />
           <Button type="text" icon={<ReloadOutlined />} onClick={() => {
-            runGetApplications(search, 'active', data?.current || 1, data?.page_size || 30)
+            runGetApplications(search, data?.current || 1, data?.page_size || 30)
           }} />
         </div>
         <List
@@ -168,7 +168,7 @@ const Home: React.FC = () => {
           current={data?.current}
           pageSize={data?.page_size}
           onChange={(page, pageSize) => {
-            runGetApplications(search, 'active', page, pageSize)
+            runGetApplications(search, page, pageSize)
           }}
         />
       </Card>

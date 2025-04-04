@@ -1,5 +1,5 @@
 import { assignUserToApplication } from "@/api/application";
-import { getApplications, getApplicationRoles } from "@/api/application";
+import { getApplicationRoles } from "@/api/application";
 import Avatar from "@/components/Avatar";
 import { AppstoreOutlined, CheckCircleFilled, CloseCircleFilled, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import { useRequest } from "ahooks";
@@ -7,6 +7,7 @@ import { Modal, Form, message, Select, Spin, List, Button, Popover } from "antd"
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createStyles } from "antd-style";
+import { getUserAssignableApplications } from "@/api/user";
 
 const useStyles = createStyles(({ css }) => ({
   assignList: css`
@@ -36,20 +37,17 @@ export const AssignUserModel = ({
   id,
   visible,
   setVisible,
-  currentApplications,
 }: {
   onSuccess: () => void,
   id: string,
   visible: boolean,
   setVisible: (visible: boolean) => void,
-  currentApplications: API.Application[],
 }) => {
   const { styles } = useStyles();
   const { t } = useTranslation("applications");
   const { t: tUsers } = useTranslation("users");
   const { t: tCommon } = useTranslation("common");
   const [form] = Form.useForm();
-  const [availableApplications, setAvailableApplications] = useState<API.Application[]>([]);
   const [selectedApplications, setSelectedApplications] = useState<AssignApplicationStatus[]>([]);
   // Assign user to application
   const { run: handleAssignUser, loading: assignUserLoading } = useRequest(async () => {
@@ -84,15 +82,10 @@ export const AssignUserModel = ({
     },
   });
 
-  const { run: handleApplicationSearch, loading: applicationSearchLoading } = useRequest(async (value?: string) => {
-    return await getApplications(value)
+  const { run: handleApplicationSearch, data: availableApplications = [], loading: applicationSearchLoading } = useRequest(async (value?: string) => {
+    const { data } = await getUserAssignableApplications(id, value)
+    return data
   }, {
-    onSuccess: (data) => {
-      const filteredApplications = data.data.filter(application =>
-        !currentApplications?.some(assignedApplication => assignedApplication.id === application.id)
-      );
-      setAvailableApplications(filteredApplications);
-    },
     manual: true,
   });
 

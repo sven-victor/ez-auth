@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Card,
   Descriptions,
@@ -9,9 +9,9 @@ import {
   Spin,
   message,
   Badge,
-  Table,
   TableColumnType,
   Divider,
+  Modal,
 } from 'antd';
 import {
   UserOutlined,
@@ -22,12 +22,13 @@ import {
   UserAddOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getUser, getUserApplications } from '@/api/user';
+import { getUser, getUserApplications, resetUserPassword } from '@/api/user';
 import { formatDate, getApplicationDescription, getApplicationDisplayName } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from 'ahooks';
 import i18n from '@/i18n';
 import AssignUserModel from './components/AssignUserModel';
+import { Table, TableRef } from '@/components/Table';
 import Avatar from '@/components/Avatar';
 import NotFound from '../NotFound';
 
@@ -56,17 +57,7 @@ const UserDetail: React.FC = () => {
     }
   });
 
-
-  const { data: applications = [], loading: applicationsLoading, run: runGetUserApplications } = useRequest(async () => {
-    if (!id) {
-      return []
-    }
-    return getUserApplications(id)
-  }, {
-    onError: (error) => {
-      message.error(t('applicationsLoadError', { error, defaultValue: "Failed to load applications: {{error}}" }));
-    }
-  });
+  const appListActionRef = useRef<TableRef<API.Application>>(null);
 
   if (loading) {
     return (
@@ -116,6 +107,37 @@ const UserDetail: React.FC = () => {
     }
   }
 
+
+  // Reset user password
+  const handleResetPassword = (id: string, username: string, email: string) => {
+    Modal.confirm({
+      title: t('resetPasswordTitle', { defaultValue: 'Reset Password' }),
+      content: t('resetPasswordConfirm', { defaultValue: `Are you sure you want to reset the password for ${username}?`, username }),
+      okText: tCommon('confirm', { defaultValue: 'Confirm' }),
+      cancelText: tCommon('cancel', { defaultValue: 'Cancel' }),
+      onOk: async () => {
+        try {
+          const res = await resetUserPassword(id);  // Pass an empty password, the backend will generate a random password
+          message.success(t('resetPasswordSuccess', { defaultValue: 'Password reset successfully' }));
+          if (res.new_password) {
+            Modal.info({
+              title: t('resetPasswordSuccess', { defaultValue: 'Password Reset Successfully' }),
+              content: <Typography.Text copyable={{ text: res.new_password }}>{t('resetPasswordSuccessContent', { defaultValue: `New password: ${res.new_password}`, password: res.new_password })}</Typography.Text>,
+            });
+          } else {
+            Modal.info({
+              title: t('resetPasswordSuccess', { defaultValue: 'Password Reset Successfully' }),
+              content: t('resetPasswordSuccessSendByEmail', { defaultValue: 'The new password has been sent to the user email: {{email}}', email }),
+            });
+          }
+        } catch (error) {
+          console.error('Reset password error:', error);
+          message.error(t('resetPasswordError', { defaultValue: 'Failed to reset password' }));
+        }
+      },
+    });
+  };
+
   const appColumns: TableColumnType<API.Application>[] = [
     {
       title: tApplications('name', { defaultValue: 'Name' }),
@@ -126,7 +148,7 @@ const UserDetail: React.FC = () => {
           <Avatar
             size="small"
             icon={<AppstoreOutlined />}
-            src={record.icon}
+            src={record.icon || undefined}
             style={{ marginRight: 8 }}
           />
           <Link to={`/applications/${record.id}`}>{getApplicationDisplayName(record, i18n.language) || record.name}</Link>
@@ -220,11 +242,19 @@ const UserDetail: React.FC = () => {
             type="primary"
             icon={<ReloadOutlined />}
             onClick={() => {
-              runGetUserApplications()
               runGetUser()
             }}
           >
             {tCommon('refresh', { defaultValue: 'Refresh' })}
+          </Button>
+          <Button
+            type="primary"
+            icon={<UserAddOutlined />}
+            onClick={() => {
+              handleResetPassword(id, user.username, user.email)
+            }}
+          >
+            {t('resetPassword', { defaultValue: 'Reset Password' })}
           </Button>
           <Button
             type="primary"
@@ -268,19 +298,19 @@ const UserDetail: React.FC = () => {
         <Table<API.Application>
           rowKey="id"
           size="small"
-          dataSource={applications}
-          loading={applicationsLoading}
+          request={async ({ current, page_size }) => {
+            return getUserApplications(id, current, page_size)
+          }}
           columns={appColumns}
-          pagination={false}
+          actionRef={appListActionRef}
         />
       </Space>
       <AssignUserModel
         id={id || ''}
         visible={assignUserVisible}
         setVisible={setAssignUserVisible}
-        currentApplications={applications || []}
         onSuccess={() => {
-          runGetUserApplications()
+          appListActionRef.current?.reload()
         }}
       />
     </Card>

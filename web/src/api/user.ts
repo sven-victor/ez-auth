@@ -54,6 +54,20 @@ export const getRoles = async (): Promise<API.PaginationResponse<API.Role>> => {
   return apiGet<API.PaginationResponse<API.Role>>('/authorization/roles');
 };
 
-export const getUserApplications = async (id: string): Promise<API.Application[]> => {
-  return apiGet<API.Application[]>(`/users/${id}/applications`);
+export const getUserApplications = async (id: string, current?: number, pageSize?: number): Promise<API.PaginationResponse<API.Application>> => {
+  return apiGet<API.PaginationResponse<API.Application>>(`/users/${id}/applications`, {
+    params: { current, page_size: pageSize },
+  });
+};
+
+export const getUserAssignableApplications = async (id: string, keywords?: string): Promise<API.PaginationResponse<API.Application>> => {
+  return apiGet<API.PaginationResponse<API.Application>>(`/users/${id}/assignable-applications`, {
+    params: { keywords },
+  });
+};
+
+export const getMySelfApplications = async (keywords?: string, current?: number, pageSize?: number): Promise<API.PaginationResponse<API.Application>> => {
+  return apiGet<API.PaginationResponse<API.Application>>(`/users/my-self/applications`, {
+    params: { current, page_size: pageSize, keywords, status: 'active' },
+  });
 };

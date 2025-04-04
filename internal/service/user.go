@@ -738,17 +738,54 @@ func (s *UserService) RestoreUser(ctx context.Context, userID string) error {
 	return nil
 }
 
-func (s *UserService) GetUserApplications(ctx context.Context, userID string) ([]model.UserApplication, error) {
+func (s *UserService) GetUserApplications(ctx context.Context, userID string, keywords, status string, page, pageSize int) ([]model.UserApplication, int64, error) {
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
-	if err := dbConn.Model(&model.Application{}).
+	query := dbConn.Model(&model.Application{}).
 		Select("t_application.*,t_application_user_role.role_id,t_application_role.name as role").
 		Joins("JOIN t_application_user_role ON t_application.resource_id = t_application_user_role.application_id and t_application_user_role.deleted_at is null").
 		Joins("LEFT JOIN t_application_role ON t_application_role.resource_id = t_application_user_role.role_id and t_application_role.deleted_at is null").
 		Joins("JOIN t_user ON t_user.resource_id = t_application_user_role.user_id and t_user.deleted_at is null").
-		Where("t_user.resource_id = ? and t_application.deleted_at is null", userID).
-		Find(&applications).Error; err != nil {
-		return nil, fmt.Errorf("failed to get applications: %w", err)
+		Where("t_user.resource_id = ?", userID).
+		Order("t_application.created_at desc")
+	if keywords != "" {
+		query = query.Where("t_application.name LIKE ?", "%"+keywords+"%")
 	}
-	return applications, nil
+	if status != "" {
+		if status == "deleted" {
+			query = query.Unscoped().Where("t_application.deleted_at IS NOT NULL")
+		} else {
+			query = query.Where("t_application.status = ?", status)
+		}
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count applications: %w", err)
+	}
+	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&applications).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to find applications: %w", err)
+	}
+	return applications, total, nil
+}
+
+func (s *UserService) GetUserAssignableApplications(ctx context.Context, userID string, keywords string, page, pageSize int) ([]model.UserApplication, int64, error) {
+	dbConn := db.Session(ctx)
+	var applications []model.UserApplication
+	query := dbConn.Model(&model.Application{}).Joins("LEFT JOIN t_application_user_role ON t_application.resource_id = t_application_user_role.application_id AND t_application_user_role.deleted_at is null AND t_application_user_role.user_id = ?", userID).
+		Where("t_application_user_role.user_id IS NULL").
+		Order("t_application.created_at desc")
+	// fix:
+	if keywords != "" {
+		query = query.Where("t_application.name LIKE ?", "%"+keywords+"%")
+	}
+	var total int64
+	if err := query.Select("t_application.id").Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count applications: %w", err)
+	}
+
+	if err := query.Select("t_application.*").Offset((page - 1) * pageSize).Limit(pageSize).Find(&applications).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get applications: %w", err)
+	}
+
+	return applications, total, nil
 }

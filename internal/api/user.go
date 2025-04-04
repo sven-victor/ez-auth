@@ -30,6 +30,8 @@ func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
 		users.PUT("/:id", middleware.RequirePermission("authorization:user:update"), c.UpdateUser)
 		users.DELETE("/:id", middleware.RequirePermission("authorization:user:delete"), c.DeleteUser)
 		users.GET("/:id/applications", middleware.RequirePermission("authorization:user:view"), c.GetUserApplications)
+		users.GET("/my-self/applications", c.GetMySelfApplications)
+		users.GET("/:id/assignable-applications", middleware.RequirePermission("authorization:user:view"), c.GetUserAssignableApplications)
 		users.POST("/:id/reset-password", middleware.RequirePermission("authorization:user:reset-password"), c.ResetPassword)
 		users.POST("/import", middleware.RequirePermission("authorization:user:create"), c.ImportLDAPUsers)
 		users.POST("/:id/restore", middleware.RequirePermission("authorization:user:update"), c.RestoreUser)
@@ -499,7 +501,26 @@ func (c *UserController) GetLdapUsers(ctx *gin.Context) {
 
 func (c *UserController) GetUserApplications(ctx *gin.Context) {
 	id := ctx.Param("id")
-	applications, err := c.svc.GetUserApplications(ctx, id)
+	if id == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code: "E4001",
+			Err:  errors.New("User ID cannot be empty"),
+		})
+		return
+	}
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "10"))
+	keywords := ctx.DefaultQuery("keywords", "")
+	status := ctx.DefaultQuery("status", "")
+
+	if page < 1 {
+		page = 1
+	}
+
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	applications, total, err := c.svc.GetUserApplications(ctx, id, keywords, status, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -508,5 +529,69 @@ func (c *UserController) GetUserApplications(ctx *gin.Context) {
 		})
 		return
 	}
-	util.RespondWithSuccess(ctx, http.StatusOK, applications)
+	util.RespondWithSuccessList(ctx, http.StatusOK, applications, total, page, pageSize)
+}
+
+func (c *UserController) GetMySelfApplications(ctx *gin.Context) {
+	id := middleware.GetUserIDFromContext(ctx)
+	if id == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code: "E4001",
+			Err:  errors.New("User ID cannot be empty"),
+		})
+		return
+	}
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "10"))
+	keywords := ctx.DefaultQuery("keywords", "")
+	status := ctx.DefaultQuery("status", "")
+
+	if page < 1 {
+		page = 1
+	}
+
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	applications, total, err := c.svc.GetUserApplications(ctx, id, keywords, status, page, pageSize)
+	if err != nil {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E5001",
+			Err:     err,
+			Message: "Failed to get user applications",
+		})
+		return
+	}
+	util.RespondWithSuccessList(ctx, http.StatusOK, applications, total, page, pageSize)
+}
+
+func (c *UserController) GetUserAssignableApplications(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code: "E4001",
+			Err:  errors.New("User ID cannot be empty"),
+		})
+		return
+	}
+	keywords := ctx.DefaultQuery("keywords", "")
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	applications, total, err := c.svc.GetUserAssignableApplications(ctx, id, keywords, page, pageSize)
+	if err != nil {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E5001",
+			Err:     err,
+			Message: "Failed to get user assignable applications",
+		})
+		return
+	}
+	util.RespondWithSuccessList(ctx, http.StatusOK, applications, total, page, pageSize)
 }
