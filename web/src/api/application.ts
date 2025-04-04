@@ -86,18 +86,18 @@ export const removeUserFromApplication = (applicationId: string, userId: string)
 
 // Get application issuer keys
 export const getApplicationIssuerKeys = async (applicationId: string): Promise<API.ApplicationIssuerKey[]> => {
-  return apiGet<API.ApplicationIssuerKey[]>(`/applications/${applicationId}/issuer_keys`);
+  return apiGet<API.ApplicationIssuerKey[]>(`/applications/${applicationId}/issuer-keys`);
 };
 
 // Create application issuer key
 export const createApplicationIssuerKey = async (applicationId: string, data: API.ApplicationIssuerKeyCreateRequest): Promise<API.ApplicationIssuerKey> => {
-  return apiPost<API.ApplicationIssuerKey>(`/applications/${applicationId}/issuer_keys`, data);
+  return apiPost<API.ApplicationIssuerKey>(`/applications/${applicationId}/issuer-keys`, data);
 };
 
 
 // Delete application issuer key
 export const deleteApplicationIssuerKey = (applicationId: string, keyId: string): Promise<void> => {
-  return apiDelete(`/applications/${applicationId}/issuer_keys/${keyId}`);
+  return apiDelete(`/applications/${applicationId}/issuer-keys/${keyId}`);
 };
 
 

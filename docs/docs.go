@@ -344,7 +344,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/issuer_keys": {
+        "/applications/{id}/issuer-keys": {
             "get": {
                 "description": "Get all issuer keys for a specific application",
                 "consumes": [
@@ -481,7 +481,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/issuer_keys/{issuerKeyId}": {
+        "/applications/{id}/issuer-keys/{issuerKeyId}": {
             "delete": {
                 "description": "Delete an issuer key for a specific application",
                 "consumes": [

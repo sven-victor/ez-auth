@@ -859,7 +859,7 @@ paths:
       summary: Update application
       tags:
       - Applications
-  /applications/{id}/issuer_keys:
+  /applications/{id}/issuer-keys:
     get:
       consumes:
       - application/json
@@ -941,7 +941,7 @@ paths:
       summary: Create application issuer key
       tags:
       - Applications
-  /applications/{id}/issuer_keys/{issuerKeyId}:
+  /applications/{id}/issuer-keys/{issuerKeyId}:
     delete:
       consumes:
       - application/json

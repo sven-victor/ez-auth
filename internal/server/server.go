@@ -31,4 +31,7 @@ func RegisterStaticFiles(engine *gin.Engine) {
 	staticHandler := static.ServeFileSystem(embedFs)
 	engine.GET("/ui/*filepath", server.CacheControl, static.Serve("/ui", staticHandler), IndexHandler)
 	engine.HEAD("/ui/*filepath", server.CacheControl, static.Serve("/ui", staticHandler), IndexHandler)
+	engine.Any("/logo.png", func(c *gin.Context) {
+		c.FileFromFS("/logo.png", staticHandler)
+	})
 }

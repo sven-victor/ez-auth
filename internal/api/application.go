@@ -47,9 +47,9 @@ func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 		apps.DELETE("/:id/keys/:keyId", middleware.RequirePermission("applications:keys:delete"), c.DeleteApplicationKey)
 
 		// Issuer management
-		apps.POST("/:id/issuer_keys", middleware.RequirePermission("applications:issuer_keys:create"), c.CreateApplicationIssuerKey)
-		apps.GET("/:id/issuer_keys", middleware.RequirePermission("applications:issuer_keys:view"), c.ListApplicationIssuerKeys)
-		apps.DELETE("/:id/issuer_keys/:issuerKeyId", middleware.RequirePermission("applications:issuer_keys:delete"), c.DeleteApplicationIssuerKey)
+		apps.POST("/:id/issuer-keys", middleware.RequirePermission("applications:issuer-keys:create"), c.CreateApplicationIssuerKey)
+		apps.GET("/:id/issuer-keys", middleware.RequirePermission("applications:issuer-keys:view"), c.ListApplicationIssuerKeys)
+		apps.DELETE("/:id/issuer-keys/:issuerKeyId", middleware.RequirePermission("applications:issuer-keys:delete"), c.DeleteApplicationIssuerKey)
 	}
 }
 
@@ -635,7 +635,7 @@ type CreateApplicationIssuerKeyRequest struct {
 // @Success 201 {object} util.Response{data=gin.H{issuer_key_id=string}}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer_keys [post]
+// @Router /applications/{id}/issuer-keys [post]
 func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 
@@ -674,7 +674,7 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 // @Success 200 {array} util.Response{data=[]model.ApplicationPrivateKey}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer_keys [get]
+// @Router /applications/{id}/issuer-keys [get]
 func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	keys, err := c.svc.ListApplicationIssuerKeys(ctx, appID)
@@ -700,7 +700,7 @@ func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer_keys/{issuerKeyId} [delete]
+// @Router /applications/{id}/issuer-keys/{issuerKeyId} [delete]
 func (c *ApplicationController) DeleteApplicationIssuerKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	issuerKeyID := ctx.Param("issuerKeyId")
@@ -780,17 +780,17 @@ func init() {
 			Description: "Delete application keys",
 		},
 		{
-			Code:        "applications:issuer_keys:view",
+			Code:        "applications:issuer-keys:view",
 			Name:        "View application issuer keys",
 			Description: "View application issuer keys",
 		},
 		{
-			Code:        "applications:issuer_keys:create",
+			Code:        "applications:issuer-keys:create",
 			Name:        "Create application issuer keys",
 			Description: "Create new application issuer keys",
 		},
 		{
-			Code:        "applications:issuer_keys:delete",
+			Code:        "applications:issuer-keys:delete",
 			Name:        "Delete application issuer keys",
 			Description: "Delete application issuer keys",
 		},
