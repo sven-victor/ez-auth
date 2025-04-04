@@ -35,6 +35,7 @@ interface UserFormValues {
   role_ids: string[];
   phone?: string;
   avatar?: string;
+  password?: string;
 }
 
 const UserForm: React.FC = () => {
@@ -124,6 +125,7 @@ const UserForm: React.FC = () => {
           source: user?.source || 'local',
           role_ids: values.role_ids,
           avatar: values.avatar,
+          password: values.password,
         });
         message.success(t('createSuccess', { defaultValue: 'User created successfully' }));
         navigate(`/users/${newUser.id}`);

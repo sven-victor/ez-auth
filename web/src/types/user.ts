@@ -7,6 +7,7 @@ export type UserCreateRequest = {
   role_ids: string[];
   phone?: string;
   avatar?: string;
+  password?: string;
 } | {
   ldap_attrs: API.LDAPAttrs[];
 }
