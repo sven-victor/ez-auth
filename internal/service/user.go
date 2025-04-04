@@ -30,17 +30,178 @@ type UserService struct {
 }
 
 func NewUserService(svc server.Service) *UserService {
-	return  &UserService{
+	userSvc := &UserService{
 		BaseService: BaseService{
 			Service: svc,
 		},
 	}
+	return userSvc
 }
 
 func hash(password []byte) (string, error) {
 	c := sha256_crypt.New()
 	salt := base64.StdEncoding.EncodeToString(w.M(uuid.NewV4()).Bytes())
 	return c.Generate(password, []byte("$5$"+salt))
+}
+
+func (s *UserService) onUserRestore(ctx context.Context, tx *gorm.DB, oldUser, user *consolemodel.User) error {
+	logger := log.GetContextLogger(ctx)
+	if user.Source == consolemodel.UserSourceLDAP && user.LDAPDN != "" {
+		settings, err := s.Service.GetLDAPSettings(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP settings: %w", err)
+		}
+		level.Info(logger).Log("msg", "restore ldap entry", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+		ldapSession, err := s.Service.GetLDAPSession(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP session: %w", err)
+		}
+		defer ldapSession.Close()
+		level.Debug(logger).Log("msg", "check if ldap entry exists", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+		entry, err := s.GetLDAPEntry(ctx, user.LDAPDN, []string{"entryUUID", "createTimestamp", "modifyTimestamp"})
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP entry: %w", err)
+		}
+		if entry == nil {
+			level.Info(logger).Log("msg", "create ldap entry", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+			var request = ldap.NewAddRequest(user.LDAPDN, nil)
+			var attrs map[string][]string = map[string][]string{
+				"cn":                     {user.Username},
+				"sn":                     {user.FullName},
+				"objectClass":            {"top", "organizationalPerson", "inetOrgPerson"},
+				settings.UserAttr:        {user.Username},
+				settings.DisplayNameAttr: {user.FullName},
+				settings.EmailAttr:       {user.Email},
+			}
+			for name, values := range attrs {
+				request.Attribute(name, values)
+			}
+			if err := ldapSession.Add(request); err != nil {
+				return fmt.Errorf("failed to create LDAP entry: %w", err)
+			}
+		}
+	}
+	return nil
+}
+func (s *UserService) onUserDelete(ctx context.Context, tx *gorm.DB, oldUser *consolemodel.User) error {
+	return nil
+}
+func (s *UserService) onUserSoftDelete(ctx context.Context, tx *gorm.DB, oldUser, user *consolemodel.User) error {
+	ldapSession, err := s.Service.GetLDAPSession(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP session: %w", err)
+	}
+	defer ldapSession.Close()
+	if user.Source == consolemodel.UserSourceLDAP && user.LDAPDN != "" {
+		delRequest := ldap.NewDelRequest(user.LDAPDN, nil)
+		if err := ldapSession.Del(delRequest); err != nil {
+			return fmt.Errorf("failed to delete LDAP entry: %w", err)
+		}
+	}
+	return nil
+}
+func (s *UserService) syncUserToLDAP(ctx context.Context, tx *gorm.DB, user *consolemodel.User) error {
+	if user.Source == consolemodel.UserSourceLDAP && user.LDAPDN != "" {
+		logger := log.GetContextLogger(ctx)
+		settings, err := s.Service.GetLDAPSettings(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP settings: %w", err)
+		}
+		level.Info(logger).Log("msg", "sync ldap entry", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+		ldapSession, err := s.Service.GetLDAPSession(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP session: %w", err)
+		}
+		defer ldapSession.Close()
+		level.Debug(logger).Log("msg", "check if ldap entry exists", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+		entry, err := s.GetLDAPEntry(ctx, user.LDAPDN, []string{"entryUUID", "createTimestamp", "modifyTimestamp"})
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP entry: %w", err)
+		}
+		dn, err := ldap.ParseDN(user.LDAPDN)
+		if err != nil {
+			return fmt.Errorf("failed to parse LDAP DN: %w", err)
+		}
+		if len(dn.RDNs) == 0 {
+			return fmt.Errorf("invalid LDAP DN: %w", err)
+		}
+		rdn := dn.RDNs[0]
+		if len(rdn.Attributes) == 0 {
+			return fmt.Errorf("invalid LDAP DN: %w", err)
+		}
+		if entry == nil {
+			level.Info(logger).Log("msg", "create ldap entry", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
+			var request = ldap.NewAddRequest(user.LDAPDN, nil)
+
+			var attrs map[string][]string = map[string][]string{
+				"cn":                     {user.Username},
+				"sn":                     {user.FullName},
+				"objectClass":            {"top", "organizationalPerson", "inetOrgPerson"},
+				settings.UserAttr:        {user.Username},
+				settings.DisplayNameAttr: {user.FullName},
+				settings.EmailAttr:       {user.Email},
+			}
+			for _, attr := range rdn.Attributes {
+				attrs[attr.Type] = []string{attr.Value}
+			}
+			for name, values := range attrs {
+				request.Attribute(name, values)
+			}
+			if err := ldapSession.Add(request); err != nil {
+				return fmt.Errorf("failed to create LDAP entry: %w", err)
+			}
+		} else {
+			if entry.GetAttributeValue(settings.UserAttr) != user.Username ||
+				entry.GetAttributeValue(settings.DisplayNameAttr) != user.FullName ||
+				entry.GetAttributeValue(settings.EmailAttr) != user.Email {
+				for _, attr := range rdn.Attributes {
+					if attr.Type == settings.UserAttr {
+						user.Username = attr.Value
+					} else if attr.Type == settings.DisplayNameAttr {
+						user.FullName = attr.Value
+					} else if attr.Type == settings.EmailAttr {
+						user.Email = attr.Value
+					}
+				}
+				modifyReq := ldap.NewModifyRequest(user.LDAPDN, nil)
+				modifyReq.Replace(settings.UserAttr, []string{user.Username})
+				modifyReq.Replace(settings.DisplayNameAttr, []string{user.FullName})
+				modifyReq.Replace(settings.EmailAttr, []string{user.Email})
+				if err := ldapSession.Modify(modifyReq); err != nil {
+					return fmt.Errorf("failed to update LDAP entry: %w", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *UserService) onUserChange(ctx context.Context, tx *gorm.DB, oldUser, newUser *consolemodel.User) error {
+	if oldUser != nil && newUser != nil {
+		if oldUser.DeletedAt.Valid && !newUser.DeletedAt.Valid {
+			return s.onUserRestore(ctx, tx, oldUser, newUser)
+		} else if !oldUser.DeletedAt.Valid && newUser.DeletedAt.Valid {
+			return s.onUserSoftDelete(ctx, tx, oldUser, newUser)
+		}
+		if oldUser.Username != newUser.Username ||
+			oldUser.FullName != newUser.FullName ||
+			oldUser.Email != newUser.Email {
+			return s.syncUserToLDAP(ctx, tx, newUser)
+		}
+	} else if oldUser == nil && newUser != nil {
+		settings, err := s.Service.GetLDAPSettings(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP settings: %w", err)
+		}
+		if settings.Enabled {
+			newUser.Source = consolemodel.UserSourceLDAP
+			newUser.LDAPDN = fmt.Sprintf("%s=%s,%s", settings.UserAttr, newUser.Username, settings.BaseDN)
+			return s.syncUserToLDAP(ctx, tx, newUser)
+		}
+	} else if oldUser != nil && newUser == nil {
+		return s.onUserDelete(ctx, tx, oldUser)
+	}
+	return nil
 }
 
 // CreateUser creates a new user
@@ -305,17 +466,19 @@ func (s *UserService) DeleteUser(ctx context.Context, userID string) error {
 		if err := tx.Delete(&user).Error; err != nil {
 			return fmt.Errorf("failed to delete user: %w", err)
 		}
-		ldapSession, err := s.Service.GetLDAPSession(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get LDAP session: %w", err)
+		if user.Source != consolemodel.UserSourceLDAP && user.LDAPDN != "" {
+			ldapSession, err := s.Service.GetLDAPSession(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get LDAP session: %w", err)
+			}
+			defer ldapSession.Close()
+			// Delete LDAP entry
+			delRequest := ldap.NewDelRequest(user.LDAPDN, nil)
+			if err := ldapSession.Del(delRequest); err != nil {
+				return fmt.Errorf("failed to delete LDAP entry: %w", err)
+			}
+			middleware.DeleteUserCache(user.ResourceID)
 		}
-		defer ldapSession.Close()
-		// Delete LDAP entry
-		delRequest := ldap.NewDelRequest(user.LDAPDN, nil)
-		if err := ldapSession.Del(delRequest); err != nil {
-			return fmt.Errorf("failed to delete LDAP entry: %w", err)
-		}
-		middleware.DeleteUserCache(user.ResourceID)
 		return nil
 	})
 }
