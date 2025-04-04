@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -26,12 +27,12 @@ import (
 )
 
 type ApplicationService struct {
-	server.Service
+	BaseService
 }
 
 func NewApplicationService(svc server.Service) *ApplicationService {
 	return &ApplicationService{
-		Service: svc,
+		BaseService: BaseService{Service: svc},
 	}
 }
 
@@ -602,6 +603,25 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 		if addRequest != nil {
 			tx.Model(&app).Update("ldap_dn", app.LDAPDN)
 			if err := ldapSession.Add(addRequest); err != nil {
+				var ldapError *ldap.Error
+				if errors.As(err, &ldapError) {
+					switch ldapError.ResultCode {
+					case ldap.LDAPResultEntryAlreadyExists:
+						return util.NewError("E50040", "Application already exists in LDAP")
+					case ldap.LDAPResultNoSuchObject:
+						level.Info(logger).Log("msg", "baseDN may not exist, creating organizational unit", "dn", baseDN)
+						if err := s.RecursiveCreateOrganizationalUnitEntry(ctx, baseDN); err != nil {
+							return fmt.Errorf("failed to create LDAP entry: %w", err)
+						}
+						level.Info(logger).Log("msg", "baseDN(organizational unit) created", "dn", baseDN)
+						if err := ldapSession.Add(addRequest); err != nil {
+							return fmt.Errorf("failed to create LDAP entry: %w", err)
+						}
+						return nil
+					default:
+						return fmt.Errorf("failed to create LDAP entry: %w", err)
+					}
+				}
 				return fmt.Errorf("failed to add LDAP entry: %w", err)
 			}
 		}
@@ -793,6 +813,9 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 		attributes := []string{"cn", "entryUUID", "createTimestamp", "modifyTimestamp"}
 		entries, err := s.FilterLDAPEntries(ctx, applicationBaseDN, filter, attributes)
 		if err != nil {
+			if strings.Contains(err.Error(), "No Such Object") {
+				return []model.Application{}, nil
+			}
 			return nil, fmt.Errorf("failed to filter LDAP entries: %w", err)
 		}
 		var applications []model.Application

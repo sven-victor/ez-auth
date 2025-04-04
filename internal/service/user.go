@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/go-kit/log/level"
@@ -25,12 +26,14 @@ import (
 )
 
 type UserService struct {
-	server.Service
+	BaseService
 }
 
 func NewUserService(svc server.Service) *UserService {
-	return &UserService{
-		Service: svc,
+	return  &UserService{
+		BaseService: BaseService{
+			Service: svc,
+		},
 	}
 }
 
@@ -42,6 +45,7 @@ func hash(password []byte) (string, error) {
 
 // CreateUser creates a new user
 func (s *UserService) CreateUser(ctx context.Context, user *consolemodel.User, roleIDs []string, ldapAttrs []model.LDAPAttr) error {
+	logger := log.GetContextLogger(ctx)
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
@@ -51,7 +55,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *consolemodel.User, r
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP settings: %w", err)
 	}
-
+	user.Source = consolemodel.UserSourceLDAP
 	user.LDAPDN = fmt.Sprintf("%s=%s,%s", settings.UserAttr, user.Username, settings.BaseDN)
 	addRequest := ldap.NewAddRequest(user.LDAPDN, nil)
 	if len(ldapAttrs) > 0 {
@@ -113,6 +117,25 @@ func (s *UserService) CreateUser(ctx context.Context, user *consolemodel.User, r
 			}
 		}
 		if err := ldapSession.Add(addRequest); err != nil {
+			var ldapError *ldap.Error
+			if errors.As(err, &ldapError) {
+				switch ldapError.ResultCode {
+				case ldap.LDAPResultEntryAlreadyExists:
+					return util.NewError("E50040", "User already exists in LDAP")
+				case ldap.LDAPResultNoSuchObject:
+					level.Info(logger).Log("msg", "baseDN may not exist, creating organizational unit", "dn", settings.BaseDN)
+					if err := s.RecursiveCreateOrganizationalUnitEntry(ctx, settings.BaseDN); err != nil {
+						return fmt.Errorf("failed to create LDAP entry: %w", err)
+					}
+					level.Info(logger).Log("msg", "baseDN(organizational unit) created", "dn", settings.BaseDN)
+					if err := ldapSession.Add(addRequest); err != nil {
+						return fmt.Errorf("failed to create LDAP entry: %w", err)
+					}
+					return nil
+				default:
+					return fmt.Errorf("failed to create LDAP entry: %w", err)
+				}
+			}
 			return fmt.Errorf("failed to create LDAP entry: %w", err)
 		}
 		return nil
@@ -545,6 +568,9 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 		attributes := []string{settings.UserAttr, settings.EmailAttr, settings.DisplayNameAttr, "entryUUID", "createTimestamp", "modifyTimestamp"}
 		entries, err := s.FilterLDAPEntries(ctx, settings.BaseDN, filter, attributes)
 		if err != nil {
+			if strings.Contains(err.Error(), "No Such Object") {
+				return []model.User{}, nil
+			}
 			return nil, fmt.Errorf("failed to filter LDAP entries: %w", err)
 		}
 		var users []model.User
