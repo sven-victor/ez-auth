@@ -11,6 +11,7 @@ import HeaderDropdown from '@/components/HeaderDropdown';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { Content, Header } from 'antd/es/layout/layout';
 import { getSiteConfig } from '@/api/system';
+import Loading from '@/components/Loading';
 
 const { Paragraph, Text, Title } = Typography;
 
@@ -19,7 +20,7 @@ const { Paragraph, Text, Title } = Typography;
 const Home: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { t: tCommon } = useTranslation('common');
-  const { logout, user } = useAuth();
+  const { logout, user, loading: userLoading } = useAuth();
 
   const [navigation, setNavigation] = useState<API.Navigation[]>([]);
 
@@ -34,7 +35,7 @@ const Home: React.FC = () => {
       window.location.href = '/console/profile#password';
       return
     }
-  } else {
+  } else if (!userLoading) {
     window.location.href = '/console/login?redirect=' + encodeURIComponent(window.location.href);
     return
   }
@@ -84,7 +85,9 @@ const Home: React.FC = () => {
   const { data, loading, run: runGetApplications } = useRequest(getMySelfApplications, {
     defaultParams: [search, 1, 30]
   });
-
+  if (userLoading) {
+    return <Loading />
+  }
   return <Layout style={{ minHeight: '100vh' }} className="site-layout">
     <Header className="site-layout-background" style={{ padding: 0, display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }} >
