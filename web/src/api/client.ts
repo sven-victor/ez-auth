@@ -103,15 +103,19 @@ client.interceptors.response.use(
       window.location.href = '/console/login?redirect=' + encodeURIComponent(window.location.href);
     }
     // Extract error message
-    const errorResponse = error.response?.data as any;
+    const errorResponse = error.response?.data as BaseResponse<any>;
     let errorMessage = new ApiError(errorResponse.code || error.response?.status.toString() || '500', error.message);
     if (errorResponse) {
-      if (errorResponse.err) {
+      if (errorResponse.code === "E50039") {
+        // LDAP not enabled, goto settings page
+        window.location.href = '/ui/settings/ldap';
+        return;
+      } else if (errorResponse.err) {
         // New format error
         errorMessage = new ApiError(errorResponse.code, errorResponse.err);
-      } else if (errorResponse.error) {
+      } else if ((errorResponse as any).error) {
         // Old format error
-        errorMessage = new ApiError(errorResponse.code, errorResponse.error);
+        errorMessage = new ApiError(errorResponse.code, (errorResponse as any).error);
       }
     }
     return Promise.reject(errorMessage);
