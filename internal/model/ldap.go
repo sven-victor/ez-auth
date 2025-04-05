@@ -6,8 +6,9 @@ import (
 )
 
 type LDAPApplicationSettings struct {
-	ApplicationBaseDN string `json:"application_base_dn"`
-	ApplicationFilter string `json:"application_filter"`
+	ApplicationBaseDN      string `json:"application_base_dn"`
+	ApplicationFilter      string `json:"application_filter"`
+	ApplicationObjectClass string `json:"application_object_class"`
 }
 
 type LDAPSettings struct {
@@ -16,13 +17,15 @@ type LDAPSettings struct {
 }
 
 const (
-	SettingLDAPApplicationBaseDN = "ldap_application_base_dn"
-	SettingLDAPApplicationFilter = "ldap_application_filter"
+	SettingLDAPApplicationBaseDN      = "ldap_application_base_dn"
+	SettingLDAPApplicationFilter      = "ldap_application_filter"
+	SettingLDAPApplicationObjectClass = "ldap_application_object_class"
 )
 
 var LDAPApplicationSettingKeys = []model.SettingKey{
 	SettingLDAPApplicationBaseDN,
 	SettingLDAPApplicationFilter,
+	SettingLDAPApplicationObjectClass,
 }
 
 func init() {

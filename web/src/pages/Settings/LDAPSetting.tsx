@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Switch, Button, message, Modal, Spin, Steps, Skeleton, Descriptions, Divider, Tag, Table } from 'antd';
+import { Form, Input, Switch, Button, message, Modal, Spin, Steps, Skeleton, Descriptions, Divider, Tag, Table, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { getLDAPSettings, updateLDAPSettings, testLDAPConnection, importLDAPUsers, importLDAPApplications } from '@/api/system';
 import { useRequest } from 'ahooks';
@@ -250,24 +250,37 @@ const LDAPSettingsForm: React.FC = () => {
         <Form.Item
           label={t('settings.ldap.userFilter')}
           name="user_filter"
+          help={t('settings.ldap.userFilterHelp', { defaultValue: 'Filter to apply to users, example: (objectClass=person)' })}
         >
           <Input disabled={!isEnabled} hidden autoComplete='off' placeholder="(objectClass=person)" />
         </Form.Item>
 
         <Form.Item
-          label={t('settings.ldap.applicationBaseDn')}
+          label={t('settings.ldap.applicationBaseDn', { defaultValue: 'Application Base DN' })}
           name="application_base_dn"
-          rules={[{ required: isEnabled, message: t('settings.ldap.applicationBaseDnRequired') }]}
+          rules={[{ required: isEnabled, message: t('settings.ldap.applicationBaseDnRequired', { defaultValue: 'Application Base DN is required' }) }]}
         >
           <Input disabled={!isEnabled} hidden autoComplete='off' placeholder="ou=applications,dc=example,dc=com" />
         </Form.Item>
 
         <Form.Item
+          label={t('settings.ldap.applicationObjectClass', { defaultValue: 'Application Object Class' })}
+          name="application_object_class"
+        >
+          <Select disabled={!isEnabled} defaultValue="groupOfNames" options={[{
+            label: 'groupOfNames',
+            value: 'groupOfNames',
+          }, {
+            label: 'groupOfUniqueNames',
+            value: 'groupOfUniqueNames',
+          }]} />
+        </Form.Item>
+        <Form.Item
           label={t('settings.ldap.applicationFilter')}
           name="application_filter"
-          rules={[{ required: isEnabled, message: t('settings.ldap.applicationFilterRequired') }]}
+          help={t('settings.ldap.applicationFilterHelp', { defaultValue: 'Filter to apply to applications, example: (|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))' })}
         >
-          <Input disabled={!isEnabled} hidden autoComplete='off' placeholder="(objectClass=groupOfNames)" />
+          <Input disabled={!isEnabled} defaultValue="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" hidden autoComplete='off' placeholder="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" />
         </Form.Item>
         <Form.Item
           label={t('settings.ldap.userAttr')}

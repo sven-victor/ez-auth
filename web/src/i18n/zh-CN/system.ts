@@ -61,8 +61,8 @@ export default {
       email: '邮箱',
       fullName: '全名',
       importStatus: '导入状态',
-      importTypeBound: '绑定用户',
-      importTypeNew: '新用户',
+      importTypeBound: '绑定',
+      importTypeNew: '新',
     },
   },
 }; 

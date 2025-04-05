@@ -44,6 +44,11 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 	}
 	defer ldapSession.Close()
 
+	applicationObjectClass, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationObjectClass, "groupOfNames")
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP application object class: %w", err)
+	}
+
 	baseDN, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP application base DN: %w", err)
@@ -79,13 +84,17 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 		if len(app.Users) > 0 {
 			addRequest = ldap.NewAddRequest(dn, nil)
 			addRequest.Attribute("cn", []string{app.Name})
-			addRequest.Attribute("objectClass", []string{"top", "groupOfNames"})
+			addRequest.Attribute("objectClass", []string{"top", applicationObjectClass})
 			userDNs := w.Filter(w.Map(app.Users, func(user model.User) string {
 				return user.LDAPDN
 			}), func(dn string) bool {
 				return len(dn) > 0
 			})
-			addRequest.Attribute("member", userDNs)
+			if applicationObjectClass == "groupOfUniqueNames" {
+				addRequest.Attribute("uniqueMember", userDNs)
+			} else {
+				addRequest.Attribute("member", userDNs)
+			}
 			app.LDAPDN = dn
 		}
 	}
@@ -340,6 +349,8 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 	}
 	app.Name = entry.GetAttributeValue("cn")
 	members := entry.GetAttributeValues("member")
+	uniqueMembers := entry.GetAttributeValues("uniqueMember")
+	members = append(members, uniqueMembers...)
 	var dbUsers []model.User
 	// Get application ldap users and roles
 	err = dbConn.Model(&model.User{}).
@@ -514,6 +525,10 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 		return fmt.Errorf("failed to get LDAP session: %w", err)
 	}
 	defer ldapSession.Close()
+	applicationObjectClass, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationObjectClass, "groupOfNames")
+	if err != nil {
+		return fmt.Errorf("failed to get LDAP application object class: %w", err)
+	}
 
 	conn := db.Session(ctx)
 	// Get user information
@@ -554,7 +569,7 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 		app.LDAPDN,
 		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
 		"(objectClass=*)",
-		[]string{"member", "objectClass"},
+		[]string{"member", "objectClass", "uniqueMember"},
 		nil,
 	)
 
@@ -564,9 +579,13 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 		level.Info(logger).Log("msg", "application not found, creating LDAP entry", "application", app.LDAPDN)
 		addRequest = ldap.NewAddRequest(app.LDAPDN, nil)
 		addRequest.Attribute("cn", []string{app.Name})
-		addRequest.Attribute("objectClass", []string{"top", "groupOfNames"})
+		addRequest.Attribute("objectClass", []string{"top", applicationObjectClass})
 		userDNs := []string{user.LDAPDN}
-		addRequest.Attribute("member", userDNs)
+		if applicationObjectClass == "groupOfUniqueNames" {
+			addRequest.Attribute("uniqueMember", userDNs)
+		} else {
+			addRequest.Attribute("member", userDNs)
+		}
 	} else if err != nil {
 		return fmt.Errorf("failed to search LDAP entry: %w", err)
 	} else {
@@ -574,13 +593,22 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 		entry := result.Entries[0]
 		members := entry.GetAttributeValues("member")
 		objectClass := entry.GetAttributeValues("objectClass")
-		if !slices.Contains(objectClass, "groupOfNames") {
-			modifyRequest.Add("objectClass", []string{"groupOfNames"})
+		if slices.Contains(objectClass, "groupOfUniqueNames") {
+			members = entry.GetAttributeValues("uniqueMember")
+		}
+		if !slices.ContainsFunc(objectClass, func(s string) bool {
+			return s == "groupOfNames" || s == "groupOfUniqueNames"
+		}) {
+			modifyRequest.Add("objectClass", []string{applicationObjectClass})
 		}
 		if slices.Contains(members, user.LDAPDN) {
 			modifyRequest = nil
 		} else {
-			modifyRequest.Add("member", []string{user.LDAPDN})
+			if applicationObjectClass == "groupOfUniqueNames" {
+				modifyRequest.Add("uniqueMember", []string{user.LDAPDN})
+			} else {
+				modifyRequest.Add("member", []string{user.LDAPDN})
+			}
 		}
 	}
 
@@ -655,7 +683,7 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 		app.LDAPDN,
 		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
 		"(objectClass=*)",
-		[]string{"member"},
+		[]string{"member", "uniqueMember"},
 		nil,
 	)
 	modifyRequest := (*ldap.ModifyRequest)(nil)
@@ -668,10 +696,18 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 		return fmt.Errorf("application not found: %s", app.LDAPDN)
 	}
 	entry := result.Entries[0]
-	members := entry.GetAttributeValues("member")
-	if slices.Contains(members, user.LDAPDN) {
+
+	if members := entry.GetAttributeValues("member"); slices.Contains(members, user.LDAPDN) {
 		modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
 		modifyRequest.Delete("member", []string{user.LDAPDN})
+		// If there are no other members, remove groupOfNames
+		if len(members) == 1 && members[0] == user.LDAPDN {
+			deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
+			modifyRequest = nil
+		}
+	} else if members := entry.GetAttributeValues("uniqueMember"); slices.Contains(members, user.LDAPDN) {
+		modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
+		modifyRequest.Delete("uniqueMember", []string{user.LDAPDN})
 		// If there are no other members, remove groupOfNames
 		if len(members) == 1 && members[0] == user.LDAPDN {
 			deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
@@ -749,6 +785,8 @@ func (s *ApplicationService) ListApplicationUsers(ctx context.Context, appID str
 	entry := result.Entries[0]
 	app.Name = entry.GetAttributeValue("cn")
 	members := entry.GetAttributeValues("member")
+	uniqueMembers := entry.GetAttributeValues("uniqueMember")
+	members = append(members, uniqueMembers...)
 
 	var dbUsers []model.User
 	// Get application users
@@ -803,15 +841,17 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 		return nil, fmt.Errorf("LDAP application base DN is empty")
 	}
 
-	applicationFilter, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationFilter, "")
+	applicationFilter, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationFilter, "(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get LDAP application filter: %w", err)
 	}
+	if applicationFilter == "" {
+		applicationFilter = "(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))"
+	}
 
 	if len(applicationDNs) == 0 {
-		filter := fmt.Sprintf("(&(cn=*)%s)", applicationFilter)
 		attributes := []string{"cn", "entryUUID", "createTimestamp", "modifyTimestamp"}
-		entries, err := s.FilterLDAPEntries(ctx, applicationBaseDN, filter, attributes)
+		entries, err := s.FilterLDAPEntries(ctx, applicationBaseDN, applicationFilter, attributes)
 		if err != nil {
 			if strings.Contains(err.Error(), "No Such Object") {
 				return []model.Application{}, nil
@@ -877,7 +917,7 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 			searchReq := ldap.NewSearchRequest(
 				applicationDN, ldap.ScopeBaseObject, ldap.NeverDerefAliases, 1, 0, false,
 				"(objectClass=*)",
-				[]string{ldapClient.GetOptions().UserAttr, ldapClient.GetOptions().EmailAttr, ldapClient.GetOptions().DisplayNameAttr, "entryUUID", "createTimestamp", "modifyTimestamp"},
+				[]string{"entryUUID", "createTimestamp", "modifyTimestamp", "member", "uniqueMember", "cn"},
 				nil,
 			)
 			result, err := ldapClient.Search(searchReq)
@@ -912,16 +952,39 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 					return fmt.Errorf("failed to check existing application: %w", err)
 				}
 			}
+			memberDNs := entry.GetAttributeValues("member")
+			uniqueMemberDNs := entry.GetAttributeValues("uniqueMember")
+			memberDNs = append(memberDNs, uniqueMemberDNs...)
 			if existingApplication.ResourceID != "" {
 				// If username or email matches, bind
 				existingApplication.LDAPDN = application.LDAPDN
 				if err := tx.Select("LDAPDN").Updates(&existingApplication).Error; err != nil {
 					return fmt.Errorf("failed to update application: %w", err)
 				}
-
+				if len(memberDNs) > 0 {
+					var users []model.User
+					if err := tx.Model(&model.User{}).Select("t_user.id", "t_user.resource_id").Where("ldap_dn IN (?)", memberDNs).
+						Joins("LEFT JOIN t_application_user_role as aur ON t_user.resource_id = aur.user_id AND aur.application_id = ?", existingApplication.ResourceID).
+						Where("aur.user_id IS NULL").
+						Find(&users).Error; err != nil {
+						return fmt.Errorf("failed to get users: %w", err)
+					}
+					for _, user := range users {
+						tx.Create(&model.ApplicationUserRole{ApplicationID: existingApplication.ResourceID, UserID: user.ResourceID})
+					}
+				}
 			} else {
 				if err := tx.Create(&application).Error; err != nil {
 					return fmt.Errorf("Failed to create application: %v", err)
+				}
+				if len(memberDNs) > 0 {
+					var users []model.User
+					if err := tx.Model(&model.User{}).Select("id", "resource_id").Where("ldap_dn IN (?)", memberDNs).Find(&users).Error; err != nil {
+						return fmt.Errorf("failed to get users: %w", err)
+					}
+					for _, user := range users {
+						tx.Create(&model.ApplicationUserRole{ApplicationID: application.ResourceID, UserID: user.ResourceID})
+					}
 				}
 			}
 			applications = append(applications, application)

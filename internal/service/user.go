@@ -483,7 +483,7 @@ func (s *UserService) DeleteUser(ctx context.Context, userID string) error {
 	})
 }
 
-var systemAttrs = []string{"entryUUID", "createTimestamp", "modifyTimestamp", "memberOf"}
+var systemAttrs = []string{"entryUUID", "createTimestamp", "modifyTimestamp", "memberOf", "uniqueMember"}
 
 type GetUserOptions struct {
 	WithSoftDeleted bool
@@ -805,7 +805,7 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 			searchReq := ldap.NewSearchRequest(
 				userDN, ldap.ScopeBaseObject, ldap.NeverDerefAliases, 1, 0, false,
 				"(objectClass=*)",
-				[]string{ldapClient.GetOptions().UserAttr, ldapClient.GetOptions().EmailAttr, ldapClient.GetOptions().DisplayNameAttr, "entryUUID", "createTimestamp", "modifyTimestamp"},
+				[]string{ldapClient.GetOptions().UserAttr, ldapClient.GetOptions().EmailAttr, ldapClient.GetOptions().DisplayNameAttr, "memberOf", "entryUUID", "createTimestamp", "modifyTimestamp"},
 				nil,
 			)
 			level.Debug(logger).Log("msg", "search LDAP user", "userDN", userDN)
@@ -826,6 +826,7 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 				Source:   consolemodel.UserSourceLDAP,
 				LDAPDN:   entry.DN,
 			}
+			applicationDNs := entry.GetAttributeValues("memberOf")
 
 			var existingUser model.User
 			if err := tx.Where("ldap_dn = ?", entry.DN).First(&existingUser).Error; err != nil {
@@ -850,10 +851,43 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 				if err := tx.Select("LDAPDN").Updates(&existingUser).Error; err != nil {
 					return fmt.Errorf("failed to update user: %w", err)
 				}
+				if len(applicationDNs) > 0 {
+					var applications []model.Application
+					if err := tx.Model(&model.Application{}).
+						Select("t_application.id", "t_application.resource_id").
+						Where("ldap_dn IN (?)", applicationDNs).
+						Joins("LEFT JOIN t_application_user_role as aur ON t_application.resource_id = aur.application_id AND aur.deleted_at IS NULL AND aur.user_id = ?", user.ResourceID).
+						Where("aur.user_id IS NULL").
+						Find(&applications).Error; err != nil {
+						return fmt.Errorf("failed to get applications: %w", err)
+					}
+					for _, application := range applications {
+						if err := tx.Create(&model.ApplicationUserRole{
+							ApplicationID: application.ResourceID,
+							UserID:        user.ResourceID,
+						}).Error; err != nil {
+							return fmt.Errorf("failed to create application user role: %w", err)
+						}
+					}
+				}
 			} else {
 				level.Info(logger).Log("msg", "user not exists, create", "username", user.Username, "email", user.Email, "full_name", user.FullName, "ldap_dn", user.LDAPDN)
 				if err := tx.Create(&user).Error; err != nil {
 					return fmt.Errorf("Failed to create user: %v", err)
+				}
+				if len(applicationDNs) > 0 {
+					var applications []model.Application
+					if err := tx.Model(&model.Application{}).Select("id", "resource_id").Where("ldap_dn IN (?)", applicationDNs).Find(&applications).Error; err != nil {
+						return fmt.Errorf("failed to get applications: %w", err)
+					}
+					for _, application := range applications {
+						if err := tx.Create(&model.ApplicationUserRole{
+							ApplicationID: application.ResourceID,
+							UserID:        user.ResourceID,
+						}).Error; err != nil {
+							return fmt.Errorf("failed to create application user role: %w", err)
+						}
+					}
 				}
 			}
 

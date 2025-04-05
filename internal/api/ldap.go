@@ -78,12 +78,19 @@ func (c *LDAPController) GetLDAPSettings(ctx *gin.Context) {
 		return
 	}
 
+	applicationObjectClass, err := c.svc.GetStringSetting(ctx, model.SettingLDAPApplicationObjectClass, "")
+	if err != nil {
+		util.RespondWithError(ctx, err)
+		return
+	}
+
 	ctx.JSON(http.StatusOK, util.Response{
 		Code: "0",
 		Data: model.LDAPSettings{
 			LDAPApplicationSettings: model.LDAPApplicationSettings{
-				ApplicationBaseDN: applicationBaseDN,
-				ApplicationFilter: applicationFilter,
+				ApplicationBaseDN:      applicationBaseDN,
+				ApplicationFilter:      applicationFilter,
+				ApplicationObjectClass: applicationObjectClass,
 			},
 			Options: settings,
 		},
@@ -145,6 +152,7 @@ func (c *LDAPController) UpdateLDAPSettings(ctx *gin.Context) {
 		string(consolemodel.SettingLDAPInsecure):        strconv.FormatBool(req.Insecure),
 		string(model.SettingLDAPApplicationBaseDN):      req.ApplicationBaseDN,
 		string(model.SettingLDAPApplicationFilter):      req.ApplicationFilter,
+		string(model.SettingLDAPApplicationObjectClass): req.ApplicationObjectClass,
 	}
 
 	if req.Options.ClientKey != nil {
