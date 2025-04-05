@@ -35,6 +35,7 @@ func NewUserService(svc server.Service) *UserService {
 			Service: svc,
 		},
 	}
+	userSvc.RegisterUserChangeHook(userSvc.onUserChange)
 	return userSvc
 }
 
