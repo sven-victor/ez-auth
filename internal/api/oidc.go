@@ -497,29 +497,6 @@ func init() {
 			svc: service.NewOIDCService(svc),
 		}
 	})
-
-	middleware.RegisterPermission("OIDC Management", "Manage OIDC clients and tokens", []consolemodel.Permission{
-		{
-			Code:        "oidc:clients:view",
-			Name:        "View OIDC clients",
-			Description: "View OIDC client list and details",
-		},
-		{
-			Code:        "oidc:clients:create",
-			Name:        "Create OIDC clients",
-			Description: "Create new OIDC clients",
-		},
-		{
-			Code:        "oidc:clients:edit",
-			Name:        "Edit OIDC clients",
-			Description: "Edit existing OIDC clients",
-		},
-		{
-			Code:        "oidc:clients:delete",
-			Name:        "Delete OIDC clients",
-			Description: "Delete OIDC clients",
-		},
-	})
 }
 
 func (c *OIDCController) createAccessToken(ctx *gin.Context, clientID string, alg string, oidcUserInfo model.OIDCUserInfo) (string, error) {
