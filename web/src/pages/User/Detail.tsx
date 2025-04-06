@@ -31,6 +31,7 @@ import AssignUserModel from './components/AssignUserModel';
 import { Table, TableRef } from '@/components/Table';
 import Avatar from '@/components/Avatar';
 import NotFound from '../NotFound';
+import { PermissionGuard } from '@/components/PermissionGuard';
 
 const { Title } = Typography;
 
@@ -230,13 +231,15 @@ const UserDetail: React.FC = () => {
           >
             {tCommon('back', { defaultValue: 'Back' })}
           </Button>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/users/${id}/edit`)}
-          >
-            {tCommon('edit', { defaultValue: 'Edit' })}
-          </Button>
+          <PermissionGuard permission="authorization:user:update">
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/users/${id}/edit`)}
+            >
+              {tCommon('edit', { defaultValue: 'Edit' })}
+            </Button>
+          </PermissionGuard>
 
           <Button
             type="primary"
@@ -247,23 +250,27 @@ const UserDetail: React.FC = () => {
           >
             {tCommon('refresh', { defaultValue: 'Refresh' })}
           </Button>
-          <Button
-            type="primary"
-            icon={<UserAddOutlined />}
-            onClick={() => {
-              handleResetPassword(id, user.username, user.email)
-            }}
-          >
-            {t('resetPassword', { defaultValue: 'Reset Password' })}
-          </Button>
-          <Button
-            type="primary"
-            icon={<UserAddOutlined />}
-            onClick={() => setAssignUserVisible(true)}
-          >
-            {t('assignApplication', { defaultValue: 'Assign Application' })}
-          </Button>
-        </Space>
+          <PermissionGuard permission="authorization:user:reset-password">
+            <Button
+              type="primary"
+              icon={<UserAddOutlined />}
+              onClick={() => {
+                handleResetPassword(id, user.username, user.email)
+              }}
+            >
+              {t('resetPassword', { defaultValue: 'Reset Password' })}
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission="applications:users:assign">
+            <Button
+              type="primary"
+              icon={<UserAddOutlined />}
+              onClick={() => setAssignUserVisible(true)}
+            >
+              {t('assignApplication', { defaultValue: 'Assign Application' })}
+            </Button>
+          </PermissionGuard>
+        </Space >
       }
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -313,7 +320,7 @@ const UserDetail: React.FC = () => {
           appListActionRef.current?.reload()
         }}
       />
-    </Card>
+    </Card >
   );
 };
 
