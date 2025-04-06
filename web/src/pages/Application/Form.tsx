@@ -158,7 +158,7 @@ const ApplicationForm: React.FC = () => {
           md: { span: 18 },
         }}
         size='middle'
-        style={{ maxWidth: '500px', margin: '0 auto' }}
+        style={{ maxWidth: '600px', margin: '0 auto' }}
         initialValues={{
           name: '',
           description: '',
