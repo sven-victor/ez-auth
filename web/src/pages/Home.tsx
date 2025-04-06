@@ -12,12 +12,35 @@ import LanguageSwitch from '@/components/LanguageSwitch';
 import { Content, Header } from 'antd/es/layout/layout';
 import { getSiteConfig } from '@/api/system';
 import Loading from '@/components/Loading';
+import { PermissionGuard } from '@/components/PermissionGuard';
+import { Link } from 'react-router-dom';
 
+import { createStyles } from 'antd-style';
+
+const useStyles = createStyles(({ token }) => {
+  return {
+    iconStyle: {
+      cursor: "pointer",
+      padding: "12px",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 18,
+      textDecoration: "none",
+      verticalAlign: "middle",
+      color: token.colorText,
+      '&:hover': {
+        color: token.colorPrimaryTextHover
+      },
+    },
+  };
+});
 const { Paragraph, Text, Title } = Typography;
 
 
 
 const Home: React.FC = () => {
+  const { styles } = useStyles();
   const { t, i18n } = useTranslation();
   const { t: tCommon } = useTranslation('common');
   const { logout, user, loading: userLoading } = useAuth();
@@ -97,6 +120,11 @@ const Home: React.FC = () => {
         </div>
       </div>
       <div style={{ marginRight: '20px' }}>
+        <PermissionGuard permission="applications:list">
+          <Link to="/applications" className={styles.iconStyle}  >
+            <AppstoreOutlined />
+          </Link>
+        </PermissionGuard>
         <HeaderDropdown
           hidden={!user?.roles}
           menu={{
