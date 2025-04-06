@@ -368,7 +368,7 @@ const LDAPSettingsForm: React.FC = () => {
             </Button>
           </PermissionGuard>
 
-          <PermissionGuard permissions={['user:create']}>
+          <PermissionGuard permissions={['authorization:user:create']}>
             <Button
               disabled={!isEnabled}
               style={{ marginLeft: 8 }}

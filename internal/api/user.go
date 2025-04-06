@@ -24,7 +24,7 @@ type UserController struct {
 func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
 	users := router.Group("/users")
 	{
-		users.GET("", middleware.RequirePermission("authorization:user:view"), c.ListUsers)
+		users.GET("", middleware.RequirePermission("authorization:user:list"), c.ListUsers)
 		users.POST("", middleware.RequirePermission("authorization:user:create"), c.CreateUser)
 		users.GET("/:id", middleware.RequirePermission("authorization:user:view"), c.GetUser)
 		users.PUT("/:id", middleware.RequirePermission("authorization:user:update"), c.UpdateUser)

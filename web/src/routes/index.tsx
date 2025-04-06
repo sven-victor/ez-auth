@@ -60,31 +60,31 @@ export const privateRoutes: IRoute[] = [
         path: '/users',
         name: 'user_management',
         icon: <UserOutlined />,
-        permissions: ['users:view'],
+        permissions: ['authorization:user:list', 'authorization:user:view', 'authorization:user:create', 'authorization:user:update'],
         children: [
           {
             path: '/users',
             element: withSuspense(UserList),
             index: true,
-            permissions: ['users:view'],
+            permissions: ['authorization:user:list'],
           },
           {
             path: '/users/:id',
             element: withSuspense(UserDetail),
             index: true,
-            permissions: ['users:view'],
+            permissions: ['authorization:user:view'],
           },
 
           {
             path: '/users/create',
             element: withSuspense(UserForm),
-            permissions: ['users:create'],
+            permissions: ['authorization:user:create'],
             index: true,
           },
           {
             path: '/users/:id/edit',
             element: withSuspense(UserForm),
-            permissions: ['users:update'],
+            permissions: ['authorization:user:update'],
             index: true,
           },
         ],
@@ -127,7 +127,7 @@ export const privateRoutes: IRoute[] = [
         icon: <SafetyOutlined />,
         element: withSuspense(LDAPSetting),
         index: true,
-        permissions: ['ldap:view'],
+        permissions: ['system:settings:view', "system:settings:update"],
       },
       // Redirect and error handling
       {
@@ -144,7 +144,6 @@ export const privateRoutes: IRoute[] = [
     path: '/oidc/test',
     element: withSuspense(OIDCTestPage),
     index: true,
-    permissions: ['oidc:view'],
   },
   {
     is_private: true,
