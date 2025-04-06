@@ -206,6 +206,7 @@ func (c *OIDCController) Authorize(ctx *gin.Context) {
 			Code:     "E4031",
 			Message:  "invalid redirect URI",
 		})
+		return
 	}
 	if !slices.Contains(app.GrantTypes, string(model.ApplicationGrantTypeAuto)) {
 		responseType = ""
