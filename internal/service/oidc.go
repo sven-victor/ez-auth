@@ -113,7 +113,7 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 		return nil, fmt.Errorf("application LDAPDN is empty")
 	}
 
-	entry, err := s.Service.GetLDAPEntry(ctx, app.LDAPDN, []string{"member", "uniqueMember"})
+	entry, err := s.Service.GetLDAPEntry(ctx, app.LDAPDN, []string{"member", "uniqueMember", "objectClass"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get LDAP entry: %w", err)
 	}
