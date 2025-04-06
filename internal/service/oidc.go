@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -112,21 +113,21 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 		return nil, fmt.Errorf("application LDAPDN is empty")
 	}
 
-	// Verify if the user exists in LDAP
-	searchRequest := ldap.NewSearchRequest(
-		user.LDAPDN,
-		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf("(memberOf=%s)", ldap.EscapeFilter(app.LDAPDN)),
-		[]string{settings.UserAttr, settings.EmailAttr, settings.DisplayNameAttr, "memberOf"},
-		nil,
-	)
-	result, err := ldapSession.Search(searchRequest)
+	entry, err := s.Service.GetLDAPEntry(ctx, app.LDAPDN, []string{"member", "uniqueMember"})
 	if err != nil {
-		return nil, fmt.Errorf("failed to search user: %w", err)
+		return nil, fmt.Errorf("failed to get LDAP entry: %w", err)
 	}
-
-	if len(result.Entries) == 0 {
-		return nil, fmt.Errorf("user not found")
+	if entry == nil {
+		return nil, fmt.Errorf("application not found")
+	}
+	var memberList []string
+	if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfUniqueNames") {
+		memberList = entry.GetAttributeValues("uniqueMember")
+	} else if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfNames") {
+		memberList = entry.GetAttributeValues("member")
+	}
+	if !slices.Contains(memberList, user.LDAPDN) {
+		return nil, fmt.Errorf("user not found in application")
 	}
 	var appAuthorization model.ApplicationAuthorization
 	// If application authorization doesn't exist, create it; otherwise update it
