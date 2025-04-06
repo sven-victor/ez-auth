@@ -26,11 +26,11 @@ type ApplicationController struct {
 func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 	apps := router.Group("/applications")
 	{
-		apps.GET("", middleware.RequirePermission("applications:view"), c.ListApplications)
+		apps.GET("", middleware.RequirePermission("applications:list"), c.ListApplications)
 		apps.POST("", middleware.RequirePermission("applications:create"), c.CreateApplication)
 		apps.POST("/import", middleware.RequirePermission("applications:create"), c.ImportLDAPApplications)
 		apps.GET("/:id", middleware.RequirePermission("applications:view"), c.GetApplication)
-		apps.PUT("/:id", middleware.RequirePermission("applications:edit"), c.UpdateApplication)
+		apps.PUT("/:id", middleware.RequirePermission("applications:update"), c.UpdateApplication)
 		apps.DELETE("/:id", middleware.RequirePermission("applications:delete"), c.DeleteApplication)
 
 		// Role management
@@ -38,9 +38,9 @@ func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 		apps.GET("/:id/roles", middleware.RequirePermission("applications:roles:view"), c.ListApplicationRoles)
 		apps.PUT("/:id/roles/:roleId", middleware.RequirePermission("applications:roles:update"), c.UpdateApplicationRole)
 		apps.DELETE("/:id/roles/:roleId", middleware.RequirePermission("applications:roles:delete"), c.DeleteApplicationRole)
-		apps.PUT("/:id/users", middleware.RequirePermission("applications:roles:assign"), c.AssignUserRole)
-		apps.DELETE("/:id/users/:userId", middleware.RequirePermission("applications:roles:assign"), c.UnassignUserRole)
-		apps.GET("/:id/users", middleware.RequirePermission("applications:roles:view"), c.ListApplicationUsers)
+		apps.PUT("/:id/users", middleware.RequirePermission("applications:users:assign"), c.AssignUserRole)
+		apps.DELETE("/:id/users/:userId", middleware.RequirePermission("applications:users:unassign"), c.UnassignUserRole)
+		apps.GET("/:id/users", middleware.RequirePermission("applications:users:view"), c.ListApplicationUsers)
 
 		// Key management
 		apps.POST("/:id/keys", middleware.RequirePermission("applications:keys:create"), c.CreateApplicationKey)
@@ -599,7 +599,7 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 		return
 	}
 
-	err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
+	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
 		auditLog.ActionName = "Create application key"
 		key, err := c.svc.CreateApplicationKey(ctx, appID, req.Name, req.ExpiresAt)
 		if err != nil {
@@ -705,7 +705,7 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 		return
 	}
 
-	err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
+	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
 		key, err := c.svc.CreateApplicationIssuerKey(ctx, appID, req.Name, req.Algorithm, req.PrivateKey)
 		if err != nil {
 			return err
@@ -781,9 +781,14 @@ func init() {
 
 	middleware.RegisterPermission("Application Management", "Manage application creation, editing, deletion, and role assignment", []consolemodel.Permission{
 		{
+			Code:        "applications:list",
+			Name:        "List applications",
+			Description: "List applications",
+		},
+		{
 			Code:        "applications:view",
 			Name:        "View applications",
-			Description: "View applications list and details",
+			Description: "View applications details",
 		},
 		{
 			Code:        "applications:create",
@@ -791,9 +796,9 @@ func init() {
 			Description: "Create new applications",
 		},
 		{
-			Code:        "applications:edit",
-			Name:        "Edit applications",
-			Description: "Edit existing applications",
+			Code:        "applications:update",
+			Name:        "Update applications",
+			Description: "Update existing applications",
 		},
 		{
 			Code:        "applications:delete",
@@ -811,14 +816,29 @@ func init() {
 			Description: "Create application roles",
 		},
 		{
+			Code:        "applications:roles:update",
+			Name:        "Update application roles",
+			Description: "Update application roles",
+		},
+		{
 			Code:        "applications:roles:delete",
 			Name:        "Delete application roles",
 			Description: "Delete application roles",
 		},
 		{
-			Code:        "applications:roles:assign",
-			Name:        "Assign application roles",
-			Description: "Assign roles to users",
+			Code:        "applications:users:assign",
+			Name:        "Assign users to applications",
+			Description: "Assign users to applications",
+		},
+		{
+			Code:        "applications:users:unassign",
+			Name:        "Unassign users from applications",
+			Description: "Unassign users from applications",
+		},
+		{
+			Code:        "applications:users:view",
+			Name:        "View application users",
+			Description: "View application users",
 		},
 		{
 			Code:        "applications:keys:view",

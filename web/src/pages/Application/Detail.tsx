@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { TeamOutlined, EditOutlined, ArrowLeftOutlined, KeyOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getApplication, deleteApplicationKey, removeUserFromApplication, deleteApplicationRole, getApplicationKeys, getApplicationIssuerKeys, deleteApplicationIssuerKey } from '@/api/application';
 import { PermissionGuard } from '@/components/PermissionGuard';
+import { usePermission } from '@/hooks/usePermission';
 import { formatDate, getApplicationDisplayName, getApplicationDescription } from '@/utils';
 import { useRequest } from 'ahooks';
 import CreateAccessKeyModel from './components/CreateAccessKeyModel';
@@ -15,6 +16,7 @@ import CreateIssuerKeyModel from './components/CreateIssuerKeyModel';
 const { TabPane } = Tabs;
 
 const ApplicationDetail: React.FC = () => {
+  const { hasPermission } = usePermission();
   const { t, i18n } = useTranslation("applications");
   const { t: tUser } = useTranslation("users");
   const { t: tCommon } = useTranslation("common");
@@ -53,6 +55,9 @@ const ApplicationDetail: React.FC = () => {
 
 
   const { run: fetchApplicationKeys } = useRequest(async () => {
+    if (!hasPermission('applications:keys:view')) {
+      return [];
+    }
     return await getApplicationKeys(id!);
   }, {
     onSuccess: (data) => {
@@ -64,6 +69,9 @@ const ApplicationDetail: React.FC = () => {
   });
 
   const { run: fetchIssuerKeys } = useRequest(async () => {
+    if (!hasPermission('applications:issuer-keys:view')) {
+      return [];
+    }
     return await getApplicationIssuerKeys(id!);
   }, {
     onSuccess: (data) => {
@@ -206,7 +214,7 @@ const ApplicationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: API.ApplicationIssuerKey) => (
         <Space>
-          <PermissionGuard permission="applications:delete-issuer-key">
+          <PermissionGuard permission="applications:issuer-keys:delete">
             <Popconfirm
               title={t('deleteKeyConfirm', { defaultValue: 'Are you sure to delete key {{name}}?', name: record.name ? record.name : record.id })}
               onConfirm={() => handleDeleteIssuerKey(record.id)}
@@ -262,7 +270,7 @@ const ApplicationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: API.ApplicationKey) => (
         <Space>
-          <PermissionGuard permission="applications:delete-key">
+          <PermissionGuard permission="applications:keys:delete">
             <Popconfirm
               title={t('deleteKeyConfirm', { defaultValue: 'Are you sure to delete key {{name}}?', name: record.name ? record.name : record.client_id })}
               onConfirm={() => handleDeleteKey(record.id)}
@@ -349,7 +357,7 @@ const ApplicationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: API.ApplicationUser) => (
         <Space>
-          <PermissionGuard permission="applications:remove-user">
+          <PermissionGuard permission="applications:users:unassign">
             <Popconfirm
               title={t('userRemoveConfirm', { defaultValue: 'Are you sure to remove user {{user}} from this application?', user: record.username })}
               onConfirm={() => handleRemoveUser(record.id)}
@@ -387,7 +395,7 @@ const ApplicationDetail: React.FC = () => {
         break;
       case 'accessKeys':
         setTabExtraContent(<Space>
-          <PermissionGuard key="create-key" permission="applications:create-key">
+          <PermissionGuard key="create-key" permission="applications:keys:create">
             <Button
               type="primary"
               icon={<KeyOutlined />}
@@ -409,7 +417,7 @@ const ApplicationDetail: React.FC = () => {
         break;
       case 'users':
         setTabExtraContent(
-          <PermissionGuard permission="applications:assign-user">
+          <PermissionGuard permission="applications:users:assign">
             <Button
               type="primary"
               icon={<TeamOutlined />}
@@ -422,7 +430,7 @@ const ApplicationDetail: React.FC = () => {
       case 'issuerKeys':
         setTabExtraContent(
           <Space>
-            <PermissionGuard permission="applications:create-issuer-key">
+            <PermissionGuard permission="applications:issuer-keys:create">
               <Button
                 type="primary"
                 icon={<KeyOutlined />}
@@ -563,7 +571,7 @@ const ApplicationDetail: React.FC = () => {
             />
           </TabPane>
 
-          <TabPane tab={t('accessKeys', { defaultValue: 'Access Keys' })} key="accessKeys">
+          <TabPane tab={t('accessKeys', { defaultValue: 'Access Keys' })} disabled={!hasPermission('applications:keys:view')} key="accessKeys">
             <Table
               columns={accessKeysColumns}
               dataSource={keys}
@@ -571,7 +579,7 @@ const ApplicationDetail: React.FC = () => {
             />
           </TabPane>
 
-          <TabPane tab={t('issuerKeys', { defaultValue: 'Issuer Keys' })} key="issuerKeys">
+          <TabPane tab={t('issuerKeys', { defaultValue: 'Issuer Keys' })} disabled={!hasPermission('applications:issuer-keys:view')} key="issuerKeys">
             <Table
               columns={issuerKeysColumns}
               dataSource={issuerKeys}
