@@ -509,6 +509,14 @@ func (s *ApplicationService) CreateApplicationRole(ctx context.Context, role *mo
 	return nil
 }
 
+// UpdateApplicationRole updates an application role
+func (s *ApplicationService) UpdateApplicationRole(ctx context.Context, appID, roleID string, role *model.ApplicationRole) error {
+	conn := db.Session(ctx)
+	if err := conn.Model(role).Select("name", "description").Where("application_id = ? AND resource_id = ?", appID, roleID).Updates(role).Error; err != nil {
+		return fmt.Errorf("failed to update application role: %w", err)
+	}
+	return nil
+}
 func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, appID, roleID string) error {
 	conn := db.Session(ctx)
 	if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).Delete(&model.ApplicationRole{}).Error; err != nil {

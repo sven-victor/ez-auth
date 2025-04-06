@@ -158,15 +158,14 @@ const ApplicationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: API.ApplicationRole) => (
         <Space>
-          <PermissionGuard permission="applications:edit-role">
+          <PermissionGuard permission="applications:role:update">
             <Button
               type="text"
               icon={<EditOutlined />}
               onClick={() => handleEditRole(record)}
             />
           </PermissionGuard>
-          <PermissionGuard permission="applications:delete-role">
-
+          <PermissionGuard permission="applications:role:delete">
             <Popconfirm
               title={t('deleteRoleConfirm', { defaultValue: 'Are you sure to delete role {{role}}?', role: record.name })}
               onConfirm={() => handleDeleteRole(record.id)}
@@ -376,7 +375,7 @@ const ApplicationDetail: React.FC = () => {
   useEffect(() => {
     switch (currentTab) {
       case 'roles':
-        setTabExtraContent(<PermissionGuard permission="applications:create-role" key="create-role">
+        setTabExtraContent(<PermissionGuard permission="applications:role:create" key="create-role">
           <Button
             type="primary"
             icon={<PlusOutlined />}

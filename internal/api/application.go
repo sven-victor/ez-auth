@@ -36,6 +36,7 @@ func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 		// Role management
 		apps.POST("/:id/roles", middleware.RequirePermission("applications:roles:create"), c.CreateApplicationRole)
 		apps.GET("/:id/roles", middleware.RequirePermission("applications:roles:view"), c.ListApplicationRoles)
+		apps.PUT("/:id/roles/:roleId", middleware.RequirePermission("applications:roles:update"), c.UpdateApplicationRole)
 		apps.DELETE("/:id/roles/:roleId", middleware.RequirePermission("applications:roles:delete"), c.DeleteApplicationRole)
 		apps.PUT("/:id/users", middleware.RequirePermission("applications:roles:assign"), c.AssignUserRole)
 		apps.DELETE("/:id/users/:userId", middleware.RequirePermission("applications:roles:assign"), c.UnassignUserRole)
@@ -294,18 +295,65 @@ func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
 		})
 		return
 	}
+	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.ActionName = "Create application role"
+		role.ApplicationID = appID
+		if err := c.svc.CreateApplicationRole(ctx, &role); err != nil {
+			return err
+		}
+		util.RespondWithSuccess(ctx, http.StatusCreated, role)
+		return nil
+	})
+	if err != nil {
+		util.RespondWithError(ctx, util.NewError("E5001", "failed to create application role", err))
+		return
+	}
+}
 
-	role.ApplicationID = appID
-	if err := c.svc.CreateApplicationRole(ctx, &role); err != nil {
+type UpdateApplicationRoleRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// UpdateApplicationRole updates a role for an application.
+// @Summary Update application role
+// @Description Update a role for a specific application
+// @Tags Applications
+// @Accept json
+// @Produce json
+// @Param id path string true "Application ID"
+// @Param roleId path string true "Role ID"
+// @Param request body UpdateApplicationRoleRequest true "Update application role request"
+// @Success 200 {object} util.Response{data=model.ApplicationRole}
+// @Failure 400 {object} util.ErrorResponse
+// @Failure 500 {object} util.ErrorResponse
+// @Router /applications/{id}/roles/{roleId} [put]
+func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
+	appID := ctx.Param("id")
+	roleID := ctx.Param("roleId")
+	var req UpdateApplicationRoleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
-			Code:    "E5001",
+			Code:    "E4001",
 			Err:     err,
-			Message: "failed to create application role",
+			Message: "invalid request body",
 		})
 		return
 	}
-
-	util.RespondWithSuccess(ctx, http.StatusCreated, role)
+	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		if err := c.svc.UpdateApplicationRole(ctx, appID, roleID, &model.ApplicationRole{
+			Name:        req.Name,
+			Description: req.Description,
+		}); err != nil {
+			return err
+		}
+		util.RespondWithSuccess(ctx, http.StatusOK, nil)
+		return nil
+	})
+	if err != nil {
+		util.RespondWithError(ctx, util.NewError("E5001", "failed to update application role", err))
+		return
+	}
 }
 
 // ListApplicationRoles retrieves all roles for an application.
