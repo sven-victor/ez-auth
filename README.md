@@ -2,6 +2,11 @@
 
 EZ-Auth is a user authorization management system built with Golang for the backend and React for the frontend. It uses LDAP for user and application data sources, with additional data stored in relational databases (SQLite, MySQL, etc.).
 
+## Demo
+- https://sso.ez-auth.org/
+- username: demo
+- password: 12345678
+
 ## Features
 
 - **Application Management**: Create, delete, and modify applications. Applications are implemented based on LDAP, where each application is an LDAP entry. Additional data (such as icons, status, roles, etc.) is stored in a relational database.
