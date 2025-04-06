@@ -608,6 +608,10 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 			return s == "groupOfNames" || s == "groupOfUniqueNames"
 		}) {
 			modifyRequest.Add("objectClass", []string{applicationObjectClass})
+		} else if slices.Contains(objectClass, "groupOfUniqueNames") {
+			applicationObjectClass = "groupOfUniqueNames"
+		} else if slices.Contains(objectClass, "groupOfNames") {
+			applicationObjectClass = "groupOfNames"
 		}
 		if slices.Contains(members, user.LDAPDN) {
 			modifyRequest = nil
