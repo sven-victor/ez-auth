@@ -263,6 +263,9 @@ func (s *UserService) CreateUser(ctx context.Context, user *consolemodel.User, r
 			user.Status = consolemodel.UserStatusPasswordExpired
 		}
 	}
+	if user.Avatar == "" {
+		user.Avatar = util.GenerateAvatar(user.Username)
+	}
 	return db.Session(ctx).Transaction(func(tx *gorm.DB) error {
 		user.Password = ""
 		// Create database record
