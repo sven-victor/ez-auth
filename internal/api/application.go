@@ -3,6 +3,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -611,8 +612,9 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 			return err
 		}
 		util.RespondWithSuccess(ctx, http.StatusCreated, gin.H{
-			"client_id":     key.ClientID,
-			"client_secret": clientSecret,
+			"client_id":         key.ClientID,
+			"client_secret":     clientSecret,
+			"wellknow_endpoint": fmt.Sprintf("%s/api/oauth2/.well-known/openid-configuration/%s", util.GetRootURL(ctx), key.ClientID),
 		})
 		return nil
 	})

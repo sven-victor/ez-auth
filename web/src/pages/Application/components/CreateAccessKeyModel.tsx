@@ -20,7 +20,7 @@ export const CreateAccessKeyModel = ({
   const { t } = useTranslation("applications");
   const [form] = Form.useForm();
 
-  const [newKey, setNewKey] = useState<API.ApplicationKey | null>(null);
+  const [newKey, setNewKey] = useState<API.ApplicationKey & { wellknow_endpoint: string } | null>(null);
 
   const { run: handleCreateKey, loading: createKeyLoading } = useRequest(async (values: any) => {
     return await createApplicationKey(id!, values);
@@ -68,7 +68,8 @@ export const CreateAccessKeyModel = ({
       />
       <div>Client ID: <Typography.Text copyable>{newKey?.client_id}</Typography.Text></div>
       <div>Client Secret: <Typography.Text copyable>{newKey?.client_secret}</Typography.Text></div>
-      <div>
+      <div>Well-known Endpoint: <Typography.Text style={{ maxWidth: 280 }} ellipsis={{ tooltip: newKey?.wellknow_endpoint }} copyable={{ text: newKey?.wellknow_endpoint }}>{newKey?.wellknow_endpoint}</Typography.Text></div>
+      <div style={{ marginTop: 10 }}>
         <Link to={`/oidc/test?client_id=${newKey?.client_id}`} target="_blank" state={{
           client_id: newKey?.client_id,
           client_secret: newKey?.client_secret,

@@ -34,8 +34,8 @@ export const deleteApplication = async (id: string): Promise<void> => {
 
 
 // Create application key
-export const createApplicationKey = (applicationId: string, data: { name: string; expiresAt?: string }): Promise<API.ApplicationKey> => {
-  return apiPost<API.ApplicationKey>(`/applications/${applicationId}/keys`, {
+export const createApplicationKey = (applicationId: string, data: { name: string; expiresAt?: string }): Promise<API.ApplicationKey & { wellknow_endpoint: string }> => {
+  return apiPost<API.ApplicationKey & { wellknow_endpoint: string }>(`/applications/${applicationId}/keys`, {
     name: data.name,
     expires_at: data.expiresAt,
   });
