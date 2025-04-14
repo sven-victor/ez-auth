@@ -124,9 +124,9 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 			}
 		}
 		if len(app.Users) > 0 {
-			var userRoles []model.ApplicationUserRole
+			var userRoles []model.ApplicationUser
 			for _, user := range app.Users {
-				var userRole model.ApplicationUserRole
+				var userRole model.ApplicationUser
 				userRole.ApplicationID = app.ResourceID
 				if len(user.Role) > 0 {
 					for _, role := range app.Roles {
@@ -254,7 +254,7 @@ func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string
 			if err := tx.Unscoped().Where("application_id = ?", appID).Delete(&model.ApplicationRole{}).Error; err != nil {
 				return fmt.Errorf("failed to delete application roles: %w", err)
 			}
-			if err := tx.Unscoped().Where("application_id = ?", appID).Delete(&model.ApplicationUserRole{}).Error; err != nil {
+			if err := tx.Unscoped().Where("application_id = ?", appID).Delete(&model.ApplicationUser{}).Error; err != nil {
 				return fmt.Errorf("failed to delete application user roles: %w", err)
 			}
 			if err := tx.Unscoped().Delete(&app).Error; err != nil {
@@ -265,7 +265,7 @@ func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string
 			if err := tx.Where("application_id = ?", appID).Delete(&model.ApplicationRole{}).Error; err != nil {
 				return fmt.Errorf("failed to delete application roles: %w", err)
 			}
-			if err := tx.Where("application_id = ?", appID).Delete(&model.ApplicationUserRole{}).Error; err != nil {
+			if err := tx.Where("application_id = ?", appID).Delete(&model.ApplicationUser{}).Error; err != nil {
 				return fmt.Errorf("failed to delete application user roles: %w", err)
 			}
 			if err := tx.Delete(&app).Error; err != nil {
@@ -354,9 +354,9 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 	var dbUsers []model.User
 	// Get application ldap users and roles
 	err = dbConn.Model(&model.User{}).
-		Select("t_user.*,t_application_role.name as role,t_application_user_role.role_id").
-		Joins("LEFT JOIN t_application_user_role on t_user.resource_id = t_application_user_role.user_id and t_application_user_role.application_id = ? and t_application_user_role.deleted_at IS NULL", appID).
-		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user_role.role_id and t_application_role.application_id = ? and t_application_role.deleted_at IS NULL", appID).
+		Select("t_user.*,t_application_role.name as role,t_application_user.role_id").
+		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ? and t_application_user.deleted_at IS NULL", appID).
+		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ? and t_application_role.deleted_at IS NULL", appID).
 		Where("t_user.ldap_dn IN (?)", members).
 		Find(&dbUsers).Error
 	if err != nil {
@@ -407,10 +407,10 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 	dbUsers = []model.User{}
 	// Get application non ldap users
 	err = dbConn.Model(&model.User{}).
-		Select("t_user.*,t_application_role.name as role,t_application_user_role.role_id").
-		Joins("JOIN t_application_user_role on t_user.resource_id = t_application_user_role.user_id  and t_application_user_role.`deleted_at` IS NULL").
-		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user_role.role_id and t_application_role.`deleted_at` IS NULL").
-		Where("t_user.ldap_dn NOT IN (?) and t_application_user_role.application_id = ?", members, appID).
+		Select("t_user.*,t_application_role.name as role,t_application_user.role_id").
+		Joins("JOIN t_application_user on t_user.resource_id = t_application_user.user_id  and t_application_user.`deleted_at` IS NULL").
+		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.`deleted_at` IS NULL").
+		Where("t_user.ldap_dn NOT IN (?) and t_application_user.application_id = ?", members, appID).
 		Find(&dbUsers).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get application users: %w", err)
@@ -626,7 +626,7 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 
 	return conn.Transaction(func(tx *gorm.DB) error {
 		// Write to database
-		userRole := model.ApplicationUserRole{
+		userRole := model.ApplicationUser{
 			ApplicationID: appID,
 			UserID:        userID,
 			RoleID:        roleID,
@@ -731,7 +731,7 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 
 	return conn.Transaction(func(tx *gorm.DB) error {
 		// Remove association from database
-		if err := tx.Where("application_id = ? AND user_id = ?", appID, userID).Unscoped().Delete(&model.ApplicationUserRole{}).Error; err != nil {
+		if err := tx.Where("application_id = ? AND user_id = ?", appID, userID).Unscoped().Delete(&model.ApplicationUser{}).Error; err != nil {
 			return fmt.Errorf("failed to delete user role: %w", err)
 		}
 		if modifyRequest != nil {
@@ -803,9 +803,9 @@ func (s *ApplicationService) ListApplicationUsers(ctx context.Context, appID str
 	var dbUsers []model.User
 	// Get application users
 	dbConn.Model(&model.User{}).
-		Select("t_user.*,t_application_role.name as role,t_application_user_role.role_id").
-		Joins("LEFT JOIN t_application_user_role on t_user.resource_id = t_application_user_role.user_id and t_application_user_role.application_id = ?", appID).
-		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user_role.role_id and t_application_role.application_id = ?", appID).
+		Select("t_user.*,t_application_role.name as role,t_application_user.role_id").
+		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ?", appID).
+		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ?", appID).
 		Where("t_user.ldap_dn IN (?)", members).
 		Find(&dbUsers)
 
@@ -976,13 +976,13 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 				if len(memberDNs) > 0 {
 					var users []model.User
 					if err := tx.Model(&model.User{}).Select("t_user.id", "t_user.resource_id").Where("ldap_dn IN (?)", memberDNs).
-						Joins("LEFT JOIN t_application_user_role as aur ON t_user.resource_id = aur.user_id AND aur.application_id = ?", existingApplication.ResourceID).
+						Joins("LEFT JOIN t_application_user as aur ON t_user.resource_id = aur.user_id AND aur.application_id = ?", existingApplication.ResourceID).
 						Where("aur.user_id IS NULL").
 						Find(&users).Error; err != nil {
 						return fmt.Errorf("failed to get users: %w", err)
 					}
 					for _, user := range users {
-						tx.Create(&model.ApplicationUserRole{ApplicationID: existingApplication.ResourceID, UserID: user.ResourceID})
+						tx.Create(&model.ApplicationUser{ApplicationID: existingApplication.ResourceID, UserID: user.ResourceID})
 					}
 				}
 			} else {
@@ -995,7 +995,7 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 						return fmt.Errorf("failed to get users: %w", err)
 					}
 					for _, user := range users {
-						tx.Create(&model.ApplicationUserRole{ApplicationID: application.ResourceID, UserID: user.ResourceID})
+						tx.Create(&model.ApplicationUser{ApplicationID: application.ResourceID, UserID: user.ResourceID})
 					}
 				}
 			}

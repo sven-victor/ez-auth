@@ -96,8 +96,8 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 	if err := db.Session(ctx).Model(&model.Application{}).
 		Select("t_application.*, t_application_role.name as role, t_application_role.resource_id as role_id").
 		Joins("left join t_application_key on t_application.resource_id = t_application_key.application_id").
-		Joins("left join t_application_user_role on t_application.resource_id = t_application_user_role.application_id and t_application_user_role.user_id = ?", user.Sub).
-		Joins("left join t_application_role on t_application.resource_id = t_application_role.application_id  and t_application_user_role.role_id = t_application_role.resource_id").
+		Joins("left join t_application_user on t_application.resource_id = t_application_user.application_id and t_application_user.user_id = ?", user.Sub).
+		Joins("left join t_application_role on t_application.resource_id = t_application_role.application_id  and t_application_user.role_id = t_application_role.resource_id").
 		Where("t_application_key.client_id = ? and t_application.status = ? and t_application.deleted_at is null", clientID, "active").
 		Find(&app).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -159,10 +159,10 @@ func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID s
 	defer ldapSession.Close()
 
 	var user model.User
-	if err := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user_role.role_id").Model(&model.User{}).Joins("join t_session on t_user.resource_id = t_session.user_id").
-		Joins("LEFT JOIN t_application_user_role on t_user.resource_id = t_application_user_role.user_id and t_application_user_role.application_id = ?", appID).
-		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user_role.role_id and t_application_role.application_id = ?", appID).
-		Joins("JOIN t_application on t_application.resource_id = t_application_user_role.application_id").
+	if err := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user.role_id").Model(&model.User{}).Joins("join t_session on t_user.resource_id = t_session.user_id").
+		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ?", appID).
+		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ?", appID).
+		Joins("JOIN t_application on t_application.resource_id = t_application_user.application_id").
 		Where("t_session.resource_id = ? and t_application.status = ? and t_application.deleted_at is null", sessionID, "active").
 		First(&user).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)

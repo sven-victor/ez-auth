@@ -860,13 +860,13 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 					if err := tx.Model(&model.Application{}).
 						Select("t_application.id", "t_application.resource_id").
 						Where("ldap_dn IN (?)", applicationDNs).
-						Joins("LEFT JOIN t_application_user_role as aur ON t_application.resource_id = aur.application_id AND aur.deleted_at IS NULL AND aur.user_id = ?", user.ResourceID).
+						Joins("LEFT JOIN t_application_user as aur ON t_application.resource_id = aur.application_id AND aur.deleted_at IS NULL AND aur.user_id = ?", user.ResourceID).
 						Where("aur.user_id IS NULL").
 						Find(&applications).Error; err != nil {
 						return fmt.Errorf("failed to get applications: %w", err)
 					}
 					for _, application := range applications {
-						if err := tx.Create(&model.ApplicationUserRole{
+						if err := tx.Create(&model.ApplicationUser{
 							ApplicationID: application.ResourceID,
 							UserID:        user.ResourceID,
 						}).Error; err != nil {
@@ -885,7 +885,7 @@ func (s *UserService) ImportLDAPUsers(ctx context.Context, userDNs []string) ([]
 						return fmt.Errorf("failed to get applications: %w", err)
 					}
 					for _, application := range applications {
-						if err := tx.Create(&model.ApplicationUserRole{
+						if err := tx.Create(&model.ApplicationUser{
 							ApplicationID: application.ResourceID,
 							UserID:        user.ResourceID,
 						}).Error; err != nil {
@@ -974,10 +974,10 @@ func (s *UserService) GetUserApplications(ctx context.Context, userID string, ke
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
 	query := dbConn.Model(&model.Application{}).
-		Select("t_application.*,t_application_user_role.role_id,t_application_role.name as role").
-		Joins("JOIN t_application_user_role ON t_application.resource_id = t_application_user_role.application_id and t_application_user_role.deleted_at is null").
-		Joins("LEFT JOIN t_application_role ON t_application_role.resource_id = t_application_user_role.role_id and t_application_role.deleted_at is null").
-		Joins("JOIN t_user ON t_user.resource_id = t_application_user_role.user_id and t_user.deleted_at is null").
+		Select("t_application.*,t_application_user.role_id,t_application_role.name as role").
+		Joins("JOIN t_application_user ON t_application.resource_id = t_application_user.application_id and t_application_user.deleted_at is null").
+		Joins("LEFT JOIN t_application_role ON t_application_role.resource_id = t_application_user.role_id and t_application_role.deleted_at is null").
+		Joins("JOIN t_user ON t_user.resource_id = t_application_user.user_id and t_user.deleted_at is null").
 		Where("t_user.resource_id = ?", userID).
 		Order("t_application.created_at desc")
 	if keywords != "" {
@@ -1003,8 +1003,8 @@ func (s *UserService) GetUserApplications(ctx context.Context, userID string, ke
 func (s *UserService) GetUserAssignableApplications(ctx context.Context, userID string, keywords string, page, pageSize int) ([]model.UserApplication, int64, error) {
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
-	query := dbConn.Model(&model.Application{}).Joins("LEFT JOIN t_application_user_role ON t_application.resource_id = t_application_user_role.application_id AND t_application_user_role.deleted_at is null AND t_application_user_role.user_id = ?", userID).
-		Where("t_application_user_role.user_id IS NULL").
+	query := dbConn.Model(&model.Application{}).Joins("LEFT JOIN t_application_user ON t_application.resource_id = t_application_user.application_id AND t_application_user.deleted_at is null AND t_application_user.user_id = ?", userID).
+		Where("t_application_user.user_id IS NULL").
 		Order("t_application.created_at desc")
 	// fix:
 	if keywords != "" {

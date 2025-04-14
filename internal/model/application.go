@@ -203,8 +203,8 @@ type ApplicationRole struct {
 	Description   string `gorm:"type:varchar(500)" json:"description"`
 }
 
-// ApplicationUserRole Application user-role association model
-type ApplicationUserRole struct {
+// ApplicationUser Application user association model
+type ApplicationUser struct {
 	model.Base
 	ApplicationID string `gorm:"type:varchar(36);not null" json:"application_id"`
 	UserID        string `gorm:"type:varchar(36);not null" json:"user_id"`
@@ -223,7 +223,7 @@ func init() {
 	db.RegisterModels(
 		&Application{},
 		&ApplicationRole{},
-		&ApplicationUserRole{},
+		&ApplicationUser{},
 		&ApplicationKey{},
 		&ApplicationPrivateKey{},
 		&ApplicationAuthorization{},
