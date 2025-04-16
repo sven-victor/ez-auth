@@ -429,7 +429,7 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, resp)
 		return
 	case "refresh_token":
-		refreshToken := ctx.PostForm("refresh_token")
+		refreshToken := tokenRequest.RefreshToken
 		if len(refreshToken) == 0 {
 			util.RespondWithError(ctx, util.NewError("E4001", "refresh token is required"))
 			return
