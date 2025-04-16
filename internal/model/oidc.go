@@ -34,6 +34,8 @@ type OIDCUserInfo struct {
 	Nonce               string   `json:"nonce,omitempty"`
 	// Not exported
 	LDAPDN string `gorm:"-" json:"-"`
+
+	GrantTypes []string `json:"grant_types,omitempty"`
 }
 
 func (u *OIDCUserInfo) GetByScope(scopeList []string) map[string]any {
@@ -42,7 +44,7 @@ func (u *OIDCUserInfo) GetByScope(scopeList []string) map[string]any {
 		scopeList = []string{"openid", "preferred_username", "email", "profile", "role"}
 	}
 	oidcUserInfo["sid"] = u.SessionID
-
+	oidcUserInfo["grant_types"] = u.GrantTypes
 	for _, scope := range scopeList {
 		switch scope {
 		case "openid":
@@ -63,6 +65,13 @@ func (u *OIDCUserInfo) GetByScope(scopeList []string) map[string]any {
 		}
 	}
 	oidcUserInfo["nonce"] = u.Nonce
+
+	for key, value := range oidcUserInfo {
+		if value == nil || value == "" {
+			delete(oidcUserInfo, key)
+		}
+	}
+
 	return oidcUserInfo
 }
 

@@ -235,6 +235,7 @@ func (c *OIDCController) Authorize(ctx *gin.Context) {
 		}
 	}
 	oidcUser.ApplicationID = app.ResourceID
+	oidcUser.GrantTypes = app.GrantTypes
 	oidcUserInfo := oidcUser.GetByScope(scopeList)
 	oidcUserInfo["aud"] = []string{clientID}
 	err = c.svc.StartAudit(ctx, app.ResourceID, func(auditLog *consolemodel.AuditLog) error {
@@ -407,22 +408,25 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 			util.RespondWithError(ctx, util.NewError("E5001", "failed to create access token", err))
 			return
 		}
-		refreshToken, err := c.createRefreshToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo)
-		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E5001", "failed to create refresh token", err))
-			return
-		}
 		idToken, err := c.createIDToken(ctx, tokenRequest.ClientID, appKey.ApplicationID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo.GetByScope(strings.Split(tokenRequest.Scope, " ")))
 		if err != nil {
 			util.RespondWithError(ctx, util.NewError("E5001", "failed to create id token", err))
 			return
 		}
-		ctx.JSON(http.StatusOK, map[string]any{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
-			"id_token":      idToken,
-			"token_type":    "Bearer",
-		})
+		resp := map[string]any{
+			"access_token": accessToken,
+			"token_type":   "Bearer",
+			"expires_in":   time.Now().Add(time.Minute * 10).Unix(),
+			"id_token":     idToken,
+		}
+		if slices.Contains(oidcUserInfo.GrantTypes, string(model.ApplicationGrantTypeRefreshToken)) {
+			resp["refresh_token"], err = c.createRefreshToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo)
+			if err != nil {
+				util.RespondWithError(ctx, util.NewError("E5001", "failed to create refresh token", err))
+				return
+			}
+		}
+		ctx.JSON(http.StatusOK, resp)
 		return
 	case "refresh_token":
 		refreshToken := ctx.PostForm("refresh_token")
@@ -678,7 +682,7 @@ func (c *OIDCController) verifyAccessToken(ctx context.Context, accessToken stri
 func (c *OIDCController) createIDToken(ctx *gin.Context, clientID, appID, alg string, jwtClaims jwt.MapClaims) (string, error) {
 	jwtClaims["exp"] = time.Now().Add(time.Minute * 10).Unix()
 	jwtClaims["iat"] = time.Now().Unix()
-	jwtClaims["nonce"] = jwtClaims["nonce"]
+	delete(jwtClaims, "grant_types")
 	delete(jwtClaims, "sid")
 	issuer, err := c.svc.GetJWTIssuer(ctx, appID, alg, "")
 	if err != nil {
