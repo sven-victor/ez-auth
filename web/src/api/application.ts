@@ -101,3 +101,6 @@ export const deleteApplicationIssuerKey = (applicationId: string, keyId: string)
 };
 
 
+export const updateApplicationPassword = (applicationId: string, data: { password: string }): Promise<void> => {
+  return apiPost(`/applications/${applicationId}/password`, data);
+};

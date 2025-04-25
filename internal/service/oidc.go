@@ -16,15 +16,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-kit/log/level"
-	"github.com/sven-victor/ez-console/pkg/util/jwt"
-
-	"github.com/go-ldap/ldap/v3"
-	"github.com/sven-victor/ez-auth/internal/model"
+	clientsldap "github.com/sven-victor/ez-console/pkg/clients/ldap"
 	"github.com/sven-victor/ez-console/pkg/config"
 	"github.com/sven-victor/ez-console/pkg/db"
 	"github.com/sven-victor/ez-console/pkg/middleware"
 	"github.com/sven-victor/ez-console/pkg/util"
+	"github.com/sven-victor/ez-console/pkg/util/jwt"
 	"github.com/sven-victor/ez-console/server"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/go-ldap/ldap/v3"
+	"github.com/sven-victor/ez-auth/internal/model"
 	"github.com/sven-victor/ez-utils/log"
 	"github.com/sven-victor/ez-utils/sets"
 	"gorm.io/gorm"
@@ -64,6 +66,78 @@ func (s *OIDCService) ValidateClient(ctx context.Context, clientID, clientSecret
 		return nil, fmt.Errorf("invalid client credentials")
 	}
 	return key, nil
+}
+
+type OIDCApplicationUser struct {
+	model.User
+	Role                     string   `json:"role"`
+	RoleID                   string   `json:"role_id"`
+	ApplicationPassword      string   `json:"application_password"`
+	GrantTypes               []string `json:"grant_types" gorm:"serializer:json"`
+	ForceIndependentPassword bool     `json:"force_independent_password"`
+}
+
+func (s *OIDCService) VerifyApplicationPassword(ctx context.Context, appID, username, password string) (*model.OIDCUserInfo, error) {
+	var user OIDCApplicationUser
+	if err := db.Session(ctx).Select("t_user.*,t_application_user.role_id,t_application_role.name as role,t_application_user.password as application_password,t_application.grant_types,t_application.force_independent_password").Model(&model.ApplicationUser{}).
+		Joins("join t_user on t_application_user.user_id = t_user.resource_id").
+		Joins("left join t_application_role on t_application_user.role_id = t_application_role.resource_id").
+		Joins("left join t_application on t_application_user.application_id = t_application.resource_id").
+		Where("t_application_user.application_id = ? and t_user.username = ?", appID, username).
+		Where("t_application_user.deleted_at is null and t_user.deleted_at is null and t_application_role.deleted_at is null").
+		First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, util.NewError("E4039", "Unauthorized application")
+		}
+		return nil, fmt.Errorf("failed to verify application password: %w", err)
+	}
+	var passwordHash string
+	if user.ApplicationPassword != "" {
+		passwordHash = user.ApplicationPassword
+	} else if user.Source != "ldap" && !user.ForceIndependentPassword {
+		passwordHash = user.Password
+	}
+	if passwordHash != "" {
+		if bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password+user.Salt)) != nil {
+			return nil, util.NewError("E40019", "Invalid application password")
+		}
+	} else {
+		if user.ForceIndependentPassword {
+			return nil, util.NewError("E40018", "Independent password not set.")
+		}
+		if user.Source == "ldap" && user.LDAPDN != "" {
+			settings, err := s.Service.GetLDAPSettings(ctx)
+			if err != nil {
+				return nil, util.NewError("E50012", "System error, please contact the administrator", err)
+			}
+
+			if !settings.Enabled {
+				return nil, nil
+			}
+			loginConn, err := clientsldap.NewConn(ctx, settings)
+			if err != nil {
+				return nil, err
+			}
+			defer loginConn.Close()
+			if err := loginConn.Bind(user.LDAPDN, password); err != nil {
+				return nil, util.NewError("E40019", "Invalid application password")
+			}
+		} else {
+			return nil, util.NewError("E40019", "Invalid application password")
+		}
+	}
+	return &model.OIDCUserInfo{
+		Sub:               user.ResourceID,
+		Name:              user.FullName,
+		Email:             user.Email,
+		PreferredUsername: user.Username,
+		Picture:           user.Avatar,
+		LDAPDN:            user.LDAPDN,
+		ApplicationID:     appID,
+		Role:              user.Role,
+		RoleID:            user.RoleID,
+		GrantTypes:        user.GrantTypes,
+	}, nil
 }
 
 type RoleApplication struct {
@@ -159,12 +233,16 @@ func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID s
 	defer ldapSession.Close()
 
 	var user model.User
-	if err := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user.role_id").Model(&model.User{}).Joins("join t_session on t_user.resource_id = t_session.user_id").
+	query := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user.role_id").Model(&model.User{}).
 		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ?", appID).
 		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ?", appID).
 		Joins("JOIN t_application on t_application.resource_id = t_application_user.application_id").
-		Where("t_session.resource_id = ? and t_application.status = ? and t_application.deleted_at is null", sessionID, "active").
-		First(&user).Error; err != nil {
+		Where("t_application.status = ? and t_application.deleted_at is null", "active")
+
+	if sessionID != "" {
+		query = query.Joins("join t_session on t_user.resource_id = t_session.user_id").Where("t_session.resource_id = ?", sessionID)
+	}
+	if err := query.First(&user).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	if user.LDAPDN != "" {

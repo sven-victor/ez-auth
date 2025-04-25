@@ -12,6 +12,7 @@ import {
   TableColumnType,
   Divider,
   Modal,
+  Tooltip,
 } from 'antd';
 import {
   UserOutlined,
@@ -178,6 +179,19 @@ const UserDetail: React.FC = () => {
       }
     },
     {
+      title: tApplications('independentPassword', { defaultValue: 'Force Independent Password' }),
+      key: 'independent_password',
+      render: (_, item) => {
+        if (item.has_password) {
+          return <Tag color="green">{tApplications('passwordHasBeenSet', { defaultValue: 'Password Set' })}</Tag>;
+        }
+        if (!item.force_independent_password) {
+          return null
+        }
+        return <Tooltip title={tApplications('passwordNotSetDescription', { defaultValue: 'The application requires a password to be set for the current user.' })}><Tag color="red">{tApplications('passwordNotSet', { defaultValue: 'Not Set' })}</Tag></Tooltip>;
+      }
+    },
+    {
       title: tApplications('status', { defaultValue: 'Status' }),
       dataIndex: 'status',
       width: 120,
@@ -195,7 +209,7 @@ const UserDetail: React.FC = () => {
       },
     },
     {
-      title: tApplications('role', { defaultValue: 'Role' }),
+      title: tApplications('roles', { defaultValue: 'Role' }),
       dataIndex: 'role',
       key: 'role',
       render: (role: string) => {

@@ -308,8 +308,14 @@ type TokenRequest struct {
 	Code                     string `form:"code" json:"code"`
 	CodeVerifier             string `form:"code_verifier" json:"code_verifier"`
 	Scope                    string `form:"scope" json:"scope"`
-	RefreshToken             string `form:"refresh_token" json:"refresh_token"`
 	IDTokenSignedResponseAlg string `form:"id_token_signed_response_alg" json:"id_token_signed_response_alg"`
+
+	// only for refresh token grant type
+	RefreshToken string `form:"refresh_token" json:"refresh_token"`
+
+	// only for password grant type
+	Username string `form:"username" json:"username"`
+	Password string `form:"password" json:"password"`
 }
 
 // Token handles OAuth2 token requests.
@@ -448,6 +454,40 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 			"expires_in":   time.Now().Add(time.Minute * 10).Unix(),
 		})
 		return
+	case "password":
+		if len(tokenRequest.Username) == 0 {
+			util.RespondWithError(ctx, util.NewError("E4001", "username is required"))
+			return
+		}
+		if len(tokenRequest.Password) == 0 {
+			util.RespondWithError(ctx, util.NewError("E4001", "password is required"))
+			return
+		}
+		oidcUserInfo, err := c.svc.VerifyApplicationPassword(ctx, appKey.ApplicationID, tokenRequest.Username, tokenRequest.Password)
+		if err != nil {
+			util.RespondWithError(ctx, util.NewError("E4001", "invalid username or password", err))
+			return
+		}
+		if oidcUserInfo == nil {
+			util.RespondWithError(ctx, util.NewError("E4001", "invalid user"))
+			return
+		}
+		oidcUserInfo.Aud = []string{appKey.ClientID}
+		if !slices.Contains(oidcUserInfo.GrantTypes, string(model.ApplicationGrantTypePassword)) {
+			util.RespondWithError(ctx, util.NewError("E4001", "invalid grant type"))
+			return
+		}
+		accessToken, err := c.createAccessToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, *oidcUserInfo)
+		if err != nil {
+			util.RespondWithError(ctx, util.NewError("E5001", "failed to create access token", err))
+			return
+		}
+		ctx.JSON(http.StatusOK, map[string]any{
+			"access_token": accessToken,
+			"token_type":   "Bearer",
+			"expires_in":   time.Now().Add(time.Minute * 10).Unix(),
+		})
+
 	default:
 		util.RespondWithError(ctx, util.NewError("E4001", "unsupported grant type"))
 		return
@@ -630,7 +670,6 @@ func (c *OIDCController) verifyAccessToken(ctx context.Context, accessToken stri
 			return nil, util.NewError("E5001", "failed to get application key", err)
 		}
 		kid, _ := token.Header["kid"].(string)
-		fmt.Println("kid", kid)
 		issuer, err := c.svc.GetJWTIssuer(ctx, appKey.ApplicationID, token.Method.Alg(), kid)
 		if err != nil {
 			return nil, util.NewError("E5001", "failed to get jwt issuer", err)

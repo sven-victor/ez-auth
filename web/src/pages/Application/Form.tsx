@@ -12,6 +12,7 @@ import {
   Descriptions,
   Radio,
   Tag,
+  Switch,
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getApplication, updateApplication, createApplication } from '@/api/application';
@@ -39,6 +40,7 @@ interface ApplicationFormValues {
   icon?: string;
   ldap_attrs?: string;
   uri?: string;
+  force_independent_password?: boolean;
 }
 
 const ApplicationForm: React.FC = () => {
@@ -54,6 +56,7 @@ const ApplicationForm: React.FC = () => {
   const [ldapAttrs, setLDAPAttrs] = useState<API.LDAPAttrs[]>([]);
 
   const [viewMode, setViewMode] = useState<'normal' | 'code'>('normal');
+  const [grantTypes, setGrantTypes] = useState<string[]>([]);
 
   // If it is edit mode, get application information
   const { loading: applicationLoading, data: application } = useRequest(async () => {
@@ -65,6 +68,7 @@ const ApplicationForm: React.FC = () => {
   }, {
     onSuccess: (data) => {
       if (data) {
+        setGrantTypes(data.grant_types || []);
         form.setFieldsValue({
           name: data.name,
           display_name: data.display_name,
@@ -77,6 +81,7 @@ const ApplicationForm: React.FC = () => {
           scopes: data.scopes,
           uri: data.uri,
           icon: data.icon,
+          force_independent_password: data.force_independent_password,
         });
         const ldap_attrs: string[] = data.ldap_attrs?.filter((attr: API.LDAPAttrs) => attr.user_attr).map((attr: API.LDAPAttrs) => {
           return `${attr.name}: ${attr.value}`
@@ -126,6 +131,7 @@ const ApplicationForm: React.FC = () => {
       redirect_uris: values.redirect_uris,
       scopes: values.scopes,
       icon: values.icon,
+      force_independent_password: values.force_independent_password,
     })
   }
 
@@ -151,14 +157,14 @@ const ApplicationForm: React.FC = () => {
         onFinish={onNormalSubmit}
         labelCol={{
           sm: { span: 24 },
-          md: { span: 6 },
+          md: { span: 8 },
         }}
         wrapperCol={{
           sm: { span: 24 },
-          md: { span: 18 },
+          md: { span: 16 },
         }}
         size='middle'
-        style={{ maxWidth: '600px', margin: '0 auto' }}
+        style={{ maxWidth: '650px', margin: '0 auto' }}
         initialValues={{
           name: '',
           description: '',
@@ -232,6 +238,7 @@ const ApplicationForm: React.FC = () => {
               if (grantTypes.filter((item) => conflictGrantTypes.includes(item)).length >= 2) {
                 const newGrantTypes = [value, ...grantTypes.filter((item) => !conflictGrantTypes.includes(item))];
                 form.setFieldsValue({ grant_types: newGrantTypes });
+                setGrantTypes(newGrantTypes);
                 return;
               }
             }
@@ -241,6 +248,16 @@ const ApplicationForm: React.FC = () => {
               return <Option value={grantType}>{t(`grantType.${grantType}`, { defaultValue: GrantTypes[grantType as keyof typeof GrantTypes] })}</Option>
             })}
           </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="force_independent_password"
+          label={t('forceIndependentPassword', { defaultValue: 'Force Independent Password' })}
+          dependencies={['grant_types']}
+          tooltip={t('forceIndependentPasswordTooltip', { defaultValue: "If enabled, users need to be forced to use the app's unique password when authenticating, and the unique password needs to be set by the user before use." })}
+          hidden={!grantTypes.includes('password')}
+        >
+          <Switch />
         </Form.Item>
 
         <Form.Item

@@ -166,6 +166,8 @@ namespace API {
     roles?: ApplicationRole[];
     icon?: string;
     ldap_attrs?: LDAPAttrs[];
+    force_independent_password?: boolean;
+    has_password?: boolean;
   }
 
   export interface ApplicationUser {
@@ -201,6 +203,7 @@ namespace API {
       display_name?: Record<string, any>;
       description?: Record<string, any>;
     };
+    force_independent_password?: boolean;
   } | {
     ldap_attrs?: LDAPAttrs[];
   }

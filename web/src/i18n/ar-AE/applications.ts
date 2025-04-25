@@ -58,6 +58,17 @@ export default {
     hybrid: 'هجين',
     password: 'كلمة المرور',
   },
+
+  setApplicationPasswordTitle: 'تعيين كلمة المرور المستقلة للتطبيق',
+  setApplicationPasswordDescription: 'تعيين كلمة مرور مستقلة للتطبيق للمستخدم الحالي.',
+  currentPassword: 'كلمة المرور الحالية',
+  setApplicationPasswordSuccess: 'تم تعيين كلمة المرور المستقلة للتطبيق بنجاح.',
+  passwordNotSet: 'لم يتم تعيين',
+  passwordHasBeenSet: 'تم تعيين كلمة المرور',
+  forceIndependentPassword: 'تعيين كلمة المرور المستقلة',
+  forceIndependentPasswordTooltip: 'إذا تم تفعيل هذا الخيار، يجب على المستخدمين استخدام كلمة المرور المستقلة للتطبيق عند التحقق، ويجب على المستخدمين تعيين كلمة المرور المستقلة قبل استخدامها.',
+  passwordNotSetDescription: 'يتطلب التطبيق تعيين كلمة مرور للمستخدم الحالي.',
+  independentPassword: 'كلمة المرور المستقلة',
   // صفحة تفاصيل التطبيق
   basicInfo: 'معلومات أساسية',
   roles: 'الأدوار',

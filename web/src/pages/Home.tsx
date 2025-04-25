@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Input, Layout, List, Pagination, Typography } from 'antd';
+import { Button, Card, Form, Input, Layout, List, message, Modal, Pagination, Radio, Space, Tag, Tooltip, Typography } from 'antd';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from 'ahooks';
 import { getMySelfApplications } from '@/api/user';
+import { updateApplicationPassword } from '@/api/application';
 import { getApplicationDescription, getApplicationDisplayName } from '@/utils';
 import Avatar from '@/components/Avatar';
-import { AppstoreOutlined, ReloadOutlined, SearchOutlined, SwapOutlined, UserOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, KeyOutlined, ProductOutlined, ReloadOutlined, SearchOutlined, SwapOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
 import HeaderDropdown from '@/components/HeaderDropdown';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { Content, Header } from 'antd/es/layout/layout';
@@ -16,6 +17,7 @@ import { PermissionGuard } from '@/components/PermissionGuard';
 import { Link } from 'react-router-dom';
 
 import { createStyles } from 'antd-style';
+import Actions from '@/components/Actions';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -43,11 +45,13 @@ const Home: React.FC = () => {
   const { styles } = useStyles();
   const { t, i18n } = useTranslation();
   const { t: tCommon } = useTranslation('common');
+  const { t: tApplications } = useTranslation('applications');
   const { logout, user, loading: userLoading } = useAuth();
 
   const [navigation, setNavigation] = useState<API.Navigation[]>([]);
 
   const [search, setSearch] = useState<string>('');
+  const [listType, setListType] = useState<'card' | 'list'>('card');
 
   const [siteConfig, setSiteConfig] = useState<API.SiteConfig | null>(null);
   if (user) {
@@ -111,6 +115,105 @@ const Home: React.FC = () => {
   if (userLoading) {
     return <Loading />
   }
+
+  const { runAsync: changePassword, loading: changePasswordLoading } = useRequest(updateApplicationPassword, {
+    manual: true,
+    onError: (error: any) => {
+      if (error.code === 'E40050') {
+        if (error.message.match(/password length must be at least \d+ characters/)) {
+          const minLength = error.message.match(/password length must be at least (\d+) characters/)?.[1]
+          message.error(tApplications('setApplicationPasswordError.E40050', { defaultValue: 'Set application password failed: {{error}}', error: error.message, minLength }))
+          return
+        }
+        message.error(`Set application password failed: ${error.message}`)
+        return
+      }
+      message.error(tApplications(`setApplicationPasswordError.${error.code}`, { defaultValue: 'Set application password failed: {{error}}', error: error.message }))
+    }
+  });
+
+  const handleChangePassword = (item: API.Application) => {
+    const modal = Modal.confirm({
+      title: tApplications('setApplicationPasswordTitle', { defaultValue: 'Set application independent password' }),
+      content: <div>
+        <div>{tApplications('setApplicationPasswordDescription', { defaultValue: 'Set an application independent password for the current user.' })}</div>
+        <Form style={{ marginTop: 10, marginBottom: 10 }} onFinish={async (values) => {
+          await changePassword(item.id, { password: values.password })
+          modal.destroy()
+          Modal.success({
+            title: tApplications('setApplicationPasswordSuccess', { defaultValue: 'Set application password successfully.' }),
+          })
+        }}>
+          <div>
+            <Form.Item name="password" >
+              <Input.Password autoComplete='new-password' />
+            </Form.Item>
+          </div>
+          <Space style={{ float: 'right' }}>
+            <Button onClick={() => modal.destroy()} loading={changePasswordLoading}>
+              {tCommon('cancel', { defaultValue: 'Cancel' })}
+            </Button>
+            <Button type="primary" htmlType="submit" loading={changePasswordLoading}>
+              {tCommon('ok', { defaultValue: 'OK' })}
+            </Button>
+          </Space>
+        </Form>
+      </div>,
+      okCancel: false,
+      footer: null,
+    })
+  }
+
+  const renderListItem = (item: API.Application) => {
+    const description = getApplicationDescription(item, i18n.language);
+    const title = getApplicationDisplayName(item, i18n.language) || item.name;
+    const grantTypes = item.grant_types || [];
+    const isPasswordGrant = grantTypes.includes('password');
+    switch (listType) {
+      case 'list':
+        return (
+          <List.Item actions={[<Actions key="actions" actions={[{
+            key: 'changePassword',
+            icon: <KeyOutlined />,
+            hidden: !isPasswordGrant,
+            type: 'link',
+            onClick: () => {
+              handleChangePassword(item)
+            }
+          }]} />]}>
+            <List.Item.Meta
+              avatar={<Avatar src={item.icon} fallback={<AppstoreOutlined />} />}
+              title={<Text style={{ fontSize: 16 }} >{title}</Text>}
+              description={description || item.uri}
+            />
+            {item.force_independent_password && <div>{item.has_password ? <Tag color="green">{tApplications('passwordHasBeenSet', { defaultValue: 'Password Set' })}</Tag> : <Tooltip title={tApplications('passwordNotSetDescription', { defaultValue: 'The application requires a password to be set for the current user.' })}><Tag color="red">{tApplications('passwordNotSet', { defaultValue: 'Not Set' })}</Tag></Tooltip>}</div>}
+          </List.Item>
+        )
+      default:
+        return (
+          <List.Item >
+            <Card
+              hoverable={!!item.uri}
+              onClick={() => {
+                if (item.uri) {
+                  window.open(item.uri, '_blank');
+                }
+              }}
+            >
+              <Card.Meta
+                avatar={<Avatar src={item.icon} fallback={<AppstoreOutlined />} />}
+                title={<Text style={{ fontSize: 16 }} ellipsis={{ tooltip: true }}>{title}</Text>}
+                description={<Paragraph
+                  style={{ height: 44 }}
+                  ellipsis={{ rows: 2, tooltip: true }}
+                >{description || item.uri}</Paragraph>}
+              />
+            </Card>
+          </List.Item>
+        )
+    }
+  }
+
   return <Layout style={{ minHeight: '100vh' }} className="site-layout">
     <Header className="site-layout-background" style={{ padding: 0, display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }} >
@@ -145,19 +248,25 @@ const Home: React.FC = () => {
       </div>
     </Header>
     <Content style={{ margin: '16px' }}>
-      <Card>
+      <Card >
         <div style={{ width: '100%', padding: 0, display: 'flex', justifyContent: 'space-between', paddingBottom: 10 }}>
           <Input placeholder={tCommon('search', { defaultValue: 'Search' })} style={{ width: 200, }} onChange={(e) => {
             setSearch(e.target.value)
           }} onPressEnter={() => {
             runGetApplications(search, 1, data?.page_size || 30)
           }} suffix={<SearchOutlined />} />
-          <Button type="text" icon={<ReloadOutlined />} onClick={() => {
-            runGetApplications(search, data?.current || 1, data?.page_size || 30)
-          }} />
+          <Space>
+            <Button type="text" icon={<ReloadOutlined />} onClick={() => {
+              runGetApplications(search, data?.current || 1, data?.page_size || 30)
+            }} />
+            <Radio.Group value={listType} onChange={(e) => setListType(e.target.value)}>
+              <Radio.Button value="card"><ProductOutlined /></Radio.Button>
+              <Radio.Button value="list"><UnorderedListOutlined /></Radio.Button>
+            </Radio.Group>
+          </Space>
         </div>
         <List
-          grid={{
+          grid={listType === 'card' ? {
             gutter: 16,
             xs: 1,
             sm: 2,
@@ -165,34 +274,10 @@ const Home: React.FC = () => {
             lg: 4,
             xl: 4,
             xxl: 6,
-          }}
+          } : undefined}
           dataSource={data?.data}
           loading={loading}
-          renderItem={(item) => {
-            const description = getApplicationDescription(item, i18n.language);
-            const title = getApplicationDisplayName(item, i18n.language) || item.name;
-            return (
-              <List.Item >
-                <Card
-                  hoverable={!!item.uri}
-                  onClick={() => {
-                    if (item.uri) {
-                      window.open(item.uri, '_blank');
-                    }
-                  }}
-                >
-                  <Card.Meta
-                    avatar={<Avatar src={item.icon} fallback={<AppstoreOutlined />} />}
-                    title={<Text style={{ fontSize: 16 }} ellipsis={{ tooltip: true }}>{title}</Text>}
-                    description={<Paragraph
-                      style={{ height: 44 }}
-                      ellipsis={{ rows: 2, tooltip: true }}
-                    >{description || item.uri}</Paragraph>}
-                  />
-                </Card>
-              </List.Item>
-            )
-          }}
+          renderItem={renderListItem}
         />
         <Pagination
           total={data?.total}

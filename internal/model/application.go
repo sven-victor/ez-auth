@@ -31,6 +31,7 @@ const (
 	ApplicationGrantTypeImplicit          ApplicationGrantType = "implicit"
 	ApplicationGrantTypeHybrid            ApplicationGrantType = "hybrid"
 	ApplicationGrantTypeRefreshToken      ApplicationGrantType = "refresh_token"
+	ApplicationGrantTypePassword          ApplicationGrantType = "password"
 )
 
 // Application Application model
@@ -51,6 +52,8 @@ type Application struct {
 	Roles           []ApplicationRole `gorm:"-" json:"roles,omitempty"`
 	Users           []User            `gorm:"-" json:"users,omitempty"`
 	LDAPAttrs       []LDAPAttr        `gorm:"-" json:"ldap_attrs,omitempty"`
+
+	ForceIndependentPassword bool `gorm:"type:tinyint(1);not null;default:0" json:"force_independent_password"`
 }
 
 func (a *Application) CheckRedirectURI(uri string) bool {
@@ -66,20 +69,23 @@ func (a *Application) CheckRedirectURI(uri string) bool {
 
 type UserApplication struct {
 	model.Base
-	Name            string            `gorm:"type:varchar(100);not null" json:"name"`
-	DisplayName     string            `gorm:"type:varchar(100);" json:"display_name"`
-	DisplayNameI18n map[string]string `gorm:"serializer:json" json:"display_name_i18n,omitempty"`
-	Description     string            `gorm:"type:varchar(500)" json:"description"`
-	DescriptionI18n map[string]string `gorm:"serializer:json" json:"description_i18n,omitempty"`
-	Icon            string            `gorm:"type:varchar(500)" json:"icon"`
-	Status          string            `gorm:"type:varchar(20);not null;default:'active'" json:"status"` // active, inactive
-	LDAPDN          string            `gorm:"column:ldap_dn;size:255" json:"ldap_dn,omitempty"`
-	URI             string            `gorm:"type:varchar(500)" json:"uri,omitempty"`
-	GrantTypes      []string          `gorm:"type:varchar(255);serializer:json" json:"grant_types,omitempty"`
-	RedirectUris    []string          `gorm:"type:varchar(255);serializer:json" json:"redirect_uris,omitempty"`
-	Scopes          []string          `gorm:"type:varchar(255);serializer:json" json:"scopes,omitempty"`
-	Role            string            `gorm:"type:varchar(100)" json:"role"`
-	RoleDescription string            `gorm:"type:varchar(500)" json:"role_description"`
+	Name                     string            `gorm:"type:varchar(100);not null" json:"name"`
+	DisplayName              string            `gorm:"type:varchar(100);" json:"display_name"`
+	DisplayNameI18n          map[string]string `gorm:"serializer:json" json:"display_name_i18n,omitempty"`
+	Description              string            `gorm:"type:varchar(500)" json:"description"`
+	DescriptionI18n          map[string]string `gorm:"serializer:json" json:"description_i18n,omitempty"`
+	Icon                     string            `gorm:"type:varchar(500)" json:"icon"`
+	Status                   string            `gorm:"type:varchar(20);not null;default:'active'" json:"status"` // active, inactive
+	LDAPDN                   string            `gorm:"column:ldap_dn;size:255" json:"ldap_dn,omitempty"`
+	URI                      string            `gorm:"type:varchar(500)" json:"uri,omitempty"`
+	GrantTypes               []string          `gorm:"type:varchar(255);serializer:json" json:"grant_types,omitempty"`
+	RedirectUris             []string          `gorm:"type:varchar(255);serializer:json" json:"redirect_uris,omitempty"`
+	Scopes                   []string          `gorm:"type:varchar(255);serializer:json" json:"scopes,omitempty"`
+	Role                     string            `gorm:"type:varchar(100)" json:"role"`
+	RoleDescription          string            `gorm:"type:varchar(500)" json:"role_description"`
+	ForceIndependentPassword bool              `gorm:"type:tinyint(1);not null;default:0" json:"force_independent_password"`
+	Password                 string            `gorm:"type:varchar(255)" json:"-"`
+	HasPassword              *bool             `gorm:"-" json:"has_password,omitempty"`
 }
 
 type ApplicationPrivateKey struct {
@@ -209,6 +215,7 @@ type ApplicationUser struct {
 	ApplicationID string `gorm:"type:varchar(36);not null" json:"application_id"`
 	UserID        string `gorm:"type:varchar(36);not null" json:"user_id"`
 	RoleID        string `gorm:"type:varchar(36)" json:"role_id"`
+	Password      string `gorm:"type:varchar(255)" json:"-"`
 }
 
 type ApplicationAuthorization struct {

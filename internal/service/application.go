@@ -23,6 +23,7 @@ import (
 	"github.com/sven-victor/ez-utils/log"
 	"github.com/sven-victor/ez-utils/safe"
 	w "github.com/sven-victor/ez-utils/wrapper"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -174,7 +175,7 @@ func (s *ApplicationService) UpdateApplication(ctx context.Context, app *model.A
 			return fmt.Errorf("failed to get original application: %w", err)
 		}
 
-		updateFields := []string{"name", "display_name", "display_name_i18n", "description", "description_i18n", "icon", "status", "grant_types", "uri", "redirect_uris", "scopes"}
+		updateFields := []string{"name", "display_name", "display_name_i18n", "description", "description_i18n", "icon", "status", "grant_types", "uri", "redirect_uris", "scopes", "force_independent_password"}
 		if err := tx.Where("resource_id = ?", app.ResourceID).Select(updateFields).Updates(app).Error; err != nil {
 			return fmt.Errorf("failed to update application: %w", err)
 		}
@@ -1083,13 +1084,13 @@ func (s *ApplicationService) CreateApplicationIssuerKey(ctx context.Context, app
 	if privateKey == "" {
 		pk, err := jwtutil.NewRandomKey(algorithm)
 		if err != nil {
-			return nil, util.NewError("E40155", "failed to generate random key", err)
+			return nil, util.NewError("E40055", "failed to generate random key", err)
 		}
 		privateKey = string(pk)
 	} else {
 		pk, err := model.ParsePrivateKey(privateKey, algorithm)
 		if err != nil {
-			return nil, util.NewError("E40154", "invalid private key", err)
+			return nil, util.NewError("E40054", "invalid private key", err)
 		}
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
@@ -1147,4 +1148,133 @@ func (s *ApplicationService) ListApplicationIssuerKeys(ctx context.Context, appI
 		return nil, fmt.Errorf("failed to list application issuer keys: %w", err)
 	}
 	return keys, nil
+}
+
+// passwordContainsAtLeast checks if the password contains at least n character types
+func passwordContainsAtLeast(password string, n int) bool {
+	types := 0
+	if hasUppercase(password) {
+		types++
+	}
+	if hasLowercase(password) {
+		types++
+	}
+	if hasDigit(password) {
+		types++
+	}
+	if hasSpecial(password) {
+		types++
+	}
+	return types >= n
+}
+
+// hasUppercase checks if it contains uppercase letters
+func hasUppercase(s string) bool {
+	for _, c := range s {
+		if c >= 'A' && c <= 'Z' {
+			return true
+		}
+	}
+	return false
+}
+
+// hasLowercase checks if it contains lowercase letters
+func hasLowercase(s string) bool {
+	for _, c := range s {
+		if c >= 'a' && c <= 'z' {
+			return true
+		}
+	}
+	return false
+}
+
+// hasDigit checks if it contains numbers
+func hasDigit(s string) bool {
+	for _, c := range s {
+		if c >= '0' && c <= '9' {
+			return true
+		}
+	}
+	return false
+}
+
+// hasSpecial checks if it contains special characters
+func hasSpecial(s string) bool {
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *ApplicationService) CheckPasswordComplexity(ctx context.Context, password string) error {
+	// Get password complexity setting
+	complexitySetting, err := s.GetStringSetting(ctx, consolemodel.SettingPasswordComplexity, string(consolemodel.PasswordComplexityMedium))
+	if err != nil {
+		return fmt.Errorf("failed to get password complexity setting: %w", err)
+	}
+
+	complexity := consolemodel.PasswordComplexity(complexitySetting)
+
+	// Get minimum password length
+	minLength, err := s.GetIntSetting(ctx, consolemodel.SettingPasswordMinLength, 8)
+	if err != nil {
+		return fmt.Errorf("failed to get minimum password length: %w", err)
+	}
+
+	// Check password length
+	if len(password) < minLength {
+		return util.NewError("E40050", fmt.Sprintf("password length must be at least %d characters", minLength), nil)
+	}
+
+	// Check password complexity
+	switch complexity {
+	case consolemodel.PasswordComplexityLow:
+		// Any characters allowed
+		return nil
+	case consolemodel.PasswordComplexityHigh:
+		// Must contain uppercase, lowercase letters and numbers
+		if !hasUppercase(password) || !hasLowercase(password) || !hasDigit(password) {
+			return util.NewError("E40052", "password must contain uppercase letters, lowercase letters, and numbers", nil)
+		}
+		return nil
+	case consolemodel.PasswordComplexityVeryHigh:
+		// Must contain uppercase, lowercase letters, numbers and special characters
+		if !hasUppercase(password) || !hasLowercase(password) || !hasDigit(password) || !hasSpecial(password) {
+			return util.NewError("E40053", "password must contain uppercase, lowercase letters, numbers and special characters", nil)
+		}
+		return nil
+	default:
+		// Default to medium complexity
+		if !passwordContainsAtLeast(password, 2) {
+			return util.NewError("E40051", "password must contain uppercase letters, lowercase letters, numbers, and special characters", nil)
+		}
+		return nil
+	}
+}
+
+func (s *ApplicationService) UpdateApplicationPassword(ctx context.Context, appID, userID, password string) error {
+	conn := db.Session(ctx)
+	var passwordHash []byte
+	if len(password) > 0 {
+		err := s.CheckPasswordComplexity(ctx, password)
+		if err != nil {
+			return err
+		}
+		var user model.User
+		if err := conn.Model(&model.User{}).Where("resource_id = ?", userID).First(&user).Error; err != nil {
+			return fmt.Errorf("failed to find user: %w", err)
+		}
+		passwordHash, err = bcrypt.GenerateFromPassword([]byte(password+user.Salt), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to generate password hash: %w", err)
+		}
+	}
+	if err := conn.Model(&model.ApplicationUser{}).
+		Where("application_id = ? and user_id = ?", appID, userID).
+		Update("password", string(passwordHash)).Error; err != nil {
+		return fmt.Errorf("failed to update application password: %w", err)
+	}
+	return nil
 }

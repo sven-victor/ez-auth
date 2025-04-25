@@ -974,7 +974,7 @@ func (s *UserService) GetUserApplications(ctx context.Context, userID string, ke
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
 	query := dbConn.Model(&model.Application{}).
-		Select("t_application.*,t_application_user.role_id,t_application_role.name as role").
+		Select("t_application.*,t_application_user.role_id,t_application_role.name as role,t_application_user.password").
 		Joins("JOIN t_application_user ON t_application.resource_id = t_application_user.application_id and t_application_user.deleted_at is null").
 		Joins("LEFT JOIN t_application_role ON t_application_role.resource_id = t_application_user.role_id and t_application_role.deleted_at is null").
 		Joins("JOIN t_user ON t_user.resource_id = t_application_user.user_id and t_user.deleted_at is null").
@@ -996,6 +996,9 @@ func (s *UserService) GetUserApplications(ctx context.Context, userID string, ke
 	}
 	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&applications).Error; err != nil {
 		return nil, 0, fmt.Errorf("failed to find applications: %w", err)
+	}
+	for i, application := range applications {
+		applications[i].HasPassword = w.P(application.Password != "")
 	}
 	return applications, total, nil
 }

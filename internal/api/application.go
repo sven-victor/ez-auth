@@ -52,6 +52,9 @@ func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 		apps.POST("/:id/issuer-keys", middleware.RequirePermission("applications:issuer-keys:create"), c.CreateApplicationIssuerKey)
 		apps.GET("/:id/issuer-keys", middleware.RequirePermission("applications:issuer-keys:view"), c.ListApplicationIssuerKeys)
 		apps.DELETE("/:id/issuer-keys/:issuerKeyId", middleware.RequirePermission("applications:issuer-keys:delete"), c.DeleteApplicationIssuerKey)
+
+		// Password management
+		apps.POST("/:id/password", c.UpdateApplicationPassword)
 	}
 }
 
@@ -161,18 +164,19 @@ func (c *ApplicationController) GetApplication(ctx *gin.Context) {
 }
 
 type UpdateApplicationRequest struct {
-	Name            string            `json:"name"`
-	DisplayName     string            `json:"display_name"`
-	DisplayNameI18n map[string]string `json:"display_name_i18n"`
-	Description     string            `json:"description"`
-	DescriptionI18n map[string]string `json:"description_i18n"`
-	Icon            string            `json:"icon"`
-	Status          string            `json:"status"`
-	GrantTypes      []string          `json:"grant_types"`
-	URI             string            `json:"uri"`
-	RedirectUris    []string          `json:"redirect_uris"`
-	Scopes          []string          `json:"scopes"`
-	LDAPAttrs       *[]model.LDAPAttr `json:"ldap_attrs"`
+	Name                     string            `json:"name"`
+	DisplayName              string            `json:"display_name"`
+	DisplayNameI18n          map[string]string `json:"display_name_i18n"`
+	Description              string            `json:"description"`
+	DescriptionI18n          map[string]string `json:"description_i18n"`
+	Icon                     string            `json:"icon"`
+	Status                   string            `json:"status"`
+	GrantTypes               []string          `json:"grant_types"`
+	URI                      string            `json:"uri"`
+	RedirectUris             []string          `json:"redirect_uris"`
+	Scopes                   []string          `json:"scopes"`
+	LDAPAttrs                *[]model.LDAPAttr `json:"ldap_attrs"`
+	ForceIndependentPassword bool              `json:"force_independent_password"`
 }
 
 // UpdateApplication updates an existing application.
@@ -224,17 +228,18 @@ func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 		Base: consolemodel.Base{
 			ResourceID: appID,
 		},
-		Name:            req.Name,
-		DisplayName:     req.DisplayName,
-		Description:     req.Description,
-		Icon:            req.Icon,
-		Status:          req.Status,
-		URI:             req.URI,
-		GrantTypes:      req.GrantTypes,
-		RedirectUris:    req.RedirectUris,
-		Scopes:          req.Scopes,
-		DisplayNameI18n: req.DisplayNameI18n,
-		DescriptionI18n: req.DescriptionI18n,
+		Name:                     req.Name,
+		DisplayName:              req.DisplayName,
+		Description:              req.Description,
+		Icon:                     req.Icon,
+		Status:                   req.Status,
+		URI:                      req.URI,
+		GrantTypes:               req.GrantTypes,
+		RedirectUris:             req.RedirectUris,
+		Scopes:                   req.Scopes,
+		DisplayNameI18n:          req.DisplayNameI18n,
+		DescriptionI18n:          req.DescriptionI18n,
+		ForceIndependentPassword: req.ForceIndependentPassword,
 	}); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -772,6 +777,51 @@ func (c *ApplicationController) DeleteApplicationIssuerKey(ctx *gin.Context) {
 		return
 	}
 	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+}
+
+type UpdateApplicationPasswordRequest struct {
+	Password string `json:"password"`
+}
+
+// UpdateApplicationPassword updates the password for an application.
+// @Summary Update application password
+// @Description Update the password for a specific application
+// @Tags Applications
+// @Accept json
+// @Produce json
+// @Param id path string true "Application ID"
+// @Param request body UpdateApplicationPasswordRequest true "Update application password request"
+// @Success 200 {object} util.Response
+// @Failure 400 {object} util.ErrorResponse
+// @Failure 500 {object} util.ErrorResponse
+// @Router /applications/{id}/password [post]
+func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
+	appID := ctx.Param("id")
+
+	var req UpdateApplicationPasswordRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			HTTPCode: http.StatusBadRequest,
+			Code:     "E4001",
+			Err:      err,
+		})
+		return
+	}
+	userID := middleware.GetUserIDFromContext(ctx)
+
+	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.ActionName = "Update application password"
+		err := c.svc.UpdateApplicationPassword(ctx, appID, userID, req.Password)
+		if err != nil {
+			return err
+		}
+		util.RespondWithSuccess(ctx, http.StatusOK, nil)
+		return nil
+	})
+	if err != nil {
+		util.RespondWithError(ctx, err)
+		return
+	}
 }
 
 func init() {
