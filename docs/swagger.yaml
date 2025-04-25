@@ -62,6 +62,8 @@ definitions:
         type: string
       application_filter:
         type: string
+      application_object_class:
+        type: string
       base_dn:
         type: string
       bind_dn:
@@ -133,6 +135,11 @@ definitions:
     - password
     - username
     type: object
+  api.UpdateApplicationPasswordRequest:
+    properties:
+      password:
+        type: string
+    type: object
   api.UpdateApplicationRequest:
     properties:
       description:
@@ -170,6 +177,13 @@ definitions:
       status:
         type: string
       uri:
+        type: string
+    type: object
+  api.UpdateApplicationRoleRequest:
+    properties:
+      description:
+        type: string
+      name:
         type: string
     type: object
   api.UpdateUserRequest:
@@ -437,6 +451,8 @@ definitions:
         type: string
       application_filter:
         type: string
+      application_object_class:
+        type: string
       base_dn:
         type: string
       bind_dn:
@@ -505,6 +521,10 @@ definitions:
         type: string
       exp:
         type: integer
+      grant_types:
+        items:
+          type: string
+        type: array
       iat:
         type: integer
       name:
@@ -1087,6 +1107,41 @@ paths:
       summary: Delete application key
       tags:
       - Applications
+  /applications/{id}/password:
+    post:
+      consumes:
+      - application/json
+      description: Update the password for a specific application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update application password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateApplicationPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Update application password
+      tags:
+      - Applications
   /applications/{id}/roles:
     get:
       consumes:
@@ -1192,6 +1247,50 @@ paths:
           schema:
             $ref: '#/definitions/util.ErrorResponse'
       summary: Delete application role
+      tags:
+      - Applications
+    put:
+      consumes:
+      - application/json
+      description: Update a role for a specific application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: string
+      - description: Update application role request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateApplicationRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.ApplicationRole'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+      summary: Update application role
       tags:
       - Applications
   /applications/{id}/users:

@@ -714,6 +714,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/applications/{id}/password": {
+            "post": {
+                "description": "Update the password for a specific application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Update application password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update application password request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateApplicationPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/util.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/applications/{id}/roles": {
             "get": {
                 "description": "Get all roles for a specific application",
@@ -840,6 +893,76 @@ const docTemplate = `{
             }
         },
         "/applications/{id}/roles/{roleId}": {
+            "put": {
+                "description": "Update a role for a specific application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Update application role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update application role request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateApplicationRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.ApplicationRole"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Delete a role for a specific application",
                 "tags": [
@@ -1970,6 +2093,9 @@ const docTemplate = `{
                 "application_filter": {
                     "type": "string"
                 },
+                "application_object_class": {
+                    "type": "string"
+                },
                 "base_dn": {
                     "type": "string"
                 },
@@ -2077,6 +2203,14 @@ const docTemplate = `{
                 }
             }
         },
+        "api.UpdateApplicationPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "api.UpdateApplicationRequest": {
             "type": "object",
             "properties": {
@@ -2132,6 +2266,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UpdateApplicationRoleRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -2537,6 +2682,9 @@ const docTemplate = `{
                 "application_filter": {
                     "type": "string"
                 },
+                "application_object_class": {
+                    "type": "string"
+                },
                 "base_dn": {
                     "type": "string"
                 },
@@ -2639,6 +2787,12 @@ const docTemplate = `{
                 },
                 "exp": {
                     "type": "integer"
+                },
+                "grant_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "iat": {
                     "type": "integer"
