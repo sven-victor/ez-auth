@@ -57,6 +57,7 @@ export default {
     implicit: '隐式',
     hybrid: '混合',
     password: '密码',
+    refresh_token: '刷新令牌',
   },
   setApplicationPasswordTitle: "设置应用独立密码",
   setApplicationPasswordDescription: "为当前用户设置该应用的独立密码。",
@@ -68,6 +69,7 @@ export default {
   forceIndependentPasswordTooltip: "如果启用，用户在认证时需要使用该应用的独立密码，且独立密码需要由用户在认证前在首页设置。",
   passwordNotSetDescription: "该应用需要当前用户设置独立密码。",
   independentPassword: "独立密码",
+  userRemoveConfirm: '确定要移除用户 {{user}} 吗？',
 
   basicInfo: '基本信息',
   roles: '角色',
@@ -172,4 +174,10 @@ export default {
   deleteIssuerKeySuccess: '颁发者密钥删除成功',
   deleteIssuerKeyError: '颁发者密钥删除失败：{{error}}',
   gotoTest: '去测试',
+  setApplicationPasswordError: {
+    E40050: '密码长度必须至少为 {{minLength}} 个字符',
+    E40051: '密码必须至少包含大写字母、小写字母和数字的两种组合',
+    E40052: '密码必须包含大写字母、小写字母和数字',
+    E40053: '密码必须包含大写字母、小写字母、数字和特殊字符',
+  },
 }; 

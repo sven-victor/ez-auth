@@ -57,6 +57,8 @@ export default {
     implicit: 'Implícito',
     hybrid: 'Híbrido',
     password: 'Contraseña',
+    refresh_token: 'Token de actualización',
+  },
   setApplicationPasswordTitle: 'Establecer contraseña de aplicación independiente',
   setApplicationPasswordDescription: 'Establecer una contraseña de aplicación independiente para el usuario actual.',
   currentPassword: 'Contraseña actual',
@@ -67,6 +69,7 @@ export default {
   forceIndependentPasswordTooltip: 'Si está activado, los usuarios deben usar la contraseña única de la aplicación al autenticar, y la contraseña única debe ser establecida por el usuario antes de su uso.',
   passwordNotSetDescription: 'La aplicación requiere que se establezca una contraseña para el usuario actual.',
   independentPassword: 'Contraseña de aplicación independiente',
+  userRemoveConfirm: '¿Está seguro de que desea eliminar el usuario {{user}}?',
   // Página de detalles de la aplicación
   basicInfo: 'Información básica',
   roles: 'Roles',
@@ -171,4 +174,10 @@ export default {
   deleteIssuerKeySuccess: 'Clave de emisor eliminada correctamente',
   deleteIssuerKeyError: 'Error al eliminar la clave de emisor: {{error}}',
   gotoTest: 'Ir a la prueba',
+  setApplicationPasswordError: {
+    E40050: 'La contraseña debe contener al menos {{minLength}} caracteres',
+    E40051: 'La contraseña debe contener al menos dos combinaciones de letras mayúsculas, minúsculas y números',
+    E40052: 'La contraseña debe contener letras mayúsculas, minúsculas y números',
+    E40053: 'La contraseña debe contener letras mayúsculas, minúsculas, números y caracteres especiales',
+  },
 }; 

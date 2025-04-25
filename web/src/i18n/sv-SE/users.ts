@@ -10,6 +10,9 @@ export default {
   ldapUserNotBound: 'LDAP-användare är inte bunden till någon lokal användare, vänligen bind den.',
   invalidLdapBindingRelationship: 'Ogiltig LDAP-bindningsrelation: {{ldap_dn}}',
   ldapUserDNNotSet: 'LDAP-användar-DN är inte inställt, vänligen ställ in det.',
+  localUserLDAPDNSet: 'LDAP-användar-DN är inställt, men användaren är inte en LDAP-användare, vänligen korrigera det.',
+  updateUserSuccess: 'Användaren har uppdaterats',
+  updateUserError: 'Kunde inte uppdatera användaren: {{error}}',
   sourceLocal: 'Lokal',
   status: 'Status',
   statusEnum: {
@@ -104,4 +107,11 @@ export default {
   selectApplication: 'Välj applikation',
   selectApplicationPlaceholder: 'Välj applikation',
   applicationRequired: 'Välj applikation',
+  createUser: 'Skapa användare',
+  assignedApplications: 'Tilldelade applikationer',
+  selectRolesPlaceholder: 'Välj roller',
+  systemAttr: 'System',
+  avatar: 'Avatar',
+  fullNameRequired: 'Ange fullständigt namn',
+  fullNamePlaceholder: 'Ange fullständigt namn',
 }; 

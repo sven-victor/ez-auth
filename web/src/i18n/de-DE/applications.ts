@@ -57,6 +57,8 @@ export default {
     implicit: 'Implizit',
     hybrid: 'Hybrid',
     password: 'Passwort',
+    refresh_token: 'Aktualisierungstoken',
+  },
   setApplicationPasswordTitle: 'Anwendungsschlüssel setzen',
   setApplicationPasswordDescription: 'Setzen Sie einen Anwendungsschlüssel für den aktuellen Benutzer.',
   currentPassword: 'Aktuelles Passwort',
@@ -67,6 +69,7 @@ export default {
   forceIndependentPasswordTooltip: 'Wenn aktiviert, müssen Benutzer das Anwendungsschlüssel bei der Authentifizierung verwenden und das Anwendungsschlüssel vor der Verwendung vom Benutzer festgelegt werden.',
   passwordNotSetDescription: 'Die Anwendung erfordert, dass ein Passwort für den aktuellen Benutzer festgelegt wird.',
   independentPassword: 'Anwendungsschlüssel',
+  userRemoveConfirm: 'Sind Sie sicher, dass Sie den Benutzer {{user}} löschen möchten?',
   // Anwendungsdetailsseite
   basicInfo: 'Basisinformationen',
   roles: 'Rollen',
@@ -171,4 +174,10 @@ export default {
   deleteIssuerKeySuccess: 'Ausstellerschlüssel erfolgreich gelöscht',
   deleteIssuerKeyError: 'Fehler beim Löschen des Ausstellerschlüssels: {{error}}',
   gotoTest: 'Zum Testen gehen',
+  setApplicationPasswordError: {
+    E40050: 'Das Passwort muss mindestens {{minLength}} Zeichen lang sein',
+    E40051: 'Das Passwort muss mindestens zwei Kombinationen aus Großbuchstaben, Kleinbuchstaben und Zahlen enthalten',
+    E40052: 'Das Passwort muss Großbuchstaben, Kleinbuchstaben und Zahlen enthalten',
+    E40053: 'Das Passwort muss Großbuchstaben, Kleinbuchstaben, Zahlen und Sonderzeichen enthalten',
+  },
 }; 

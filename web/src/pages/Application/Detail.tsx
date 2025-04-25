@@ -20,7 +20,6 @@ const ApplicationDetail: React.FC = () => {
   const { t, i18n } = useTranslation("applications");
   const { t: tUser } = useTranslation("users");
   const { t: tCommon } = useTranslation("common");
-  console.log(i18n.language)
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -530,7 +529,7 @@ const ApplicationDetail: React.FC = () => {
                 <Space>
                   {application?.grant_types?.map((type: string) => (
                     <Tag color="blue" key={type}>
-                      {type}
+                      {t(`grantType.${type}`, { defaultValue: type })}
                     </Tag>
                   ))}
                 </Space>

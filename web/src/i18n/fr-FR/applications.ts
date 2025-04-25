@@ -57,6 +57,8 @@ export default {
     implicit: 'Implicite',
     hybrid: 'Hybride',
     password: 'Mot de passe',
+    refresh_token: 'Token de rafraîchissement',
+  },
   setApplicationPasswordTitle: 'Définir le mot de passe de l\'application',
   setApplicationPasswordDescription: 'Définir un mot de passe de l\'application pour l\'utilisateur actuel.',
   currentPassword: 'Mot de passe actuel',
@@ -67,6 +69,7 @@ export default {
   forceIndependentPasswordTooltip: 'Si activé, les utilisateurs doivent utiliser le mot de passe unique de l\'application lors de l\'authentification, et le mot de passe unique doit être défini par l\'utilisateur avant son utilisation.',
   passwordNotSetDescription: 'L\'application nécessite que le mot de passe soit défini pour l\'utilisateur actuel.',
   independentPassword: 'Mot de passe de l\'application',
+  userRemoveConfirm: 'Êtes-vous sûr de vouloir supprimer l\'utilisateur {{user}} ?',
   // Page de détails de l'application
   basicInfo: 'Informations de base',
   roles: 'Rôles',
@@ -171,4 +174,10 @@ export default {
   deleteIssuerKeySuccess: 'Clé d\'émetteur supprimée avec succès',
   deleteIssuerKeyError: 'Échec de la suppression de la clé d\'émetteur : {{error}}',
   gotoTest: 'Aller au test',
+  setApplicationPasswordError: {
+    E40050: 'Le mot de passe doit contenir au moins {{minLength}} caractères',
+    E40051: 'Le mot de passe doit contenir au moins deux combinaisons de lettres majuscules, minuscules et chiffres',
+    E40052: 'Le mot de passe doit contenir des lettres majuscules, minuscules et chiffres',
+    E40053: 'Le mot de passe doit contenir des lettres majuscules, minuscules, chiffres et caractères spéciaux',
+  },
 }; 

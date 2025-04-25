@@ -193,7 +193,7 @@ const UserForm: React.FC = () => {
       >
         <Form.Item
           name="avatar"
-          label={t('user.avatar', { defaultValue: 'Avatar' })}
+          label={t('avatar', { defaultValue: 'Avatar' })}
         >
           <AvatarUpload />
         </Form.Item>
@@ -262,11 +262,11 @@ const UserForm: React.FC = () => {
         )}
         <Form.Item
           name="role_ids"
-          label={t('user.roles', { defaultValue: 'Roles' })}
+          label={t('roles', { defaultValue: 'Roles' })}
         >
           <Select
             mode="multiple"
-            placeholder={t('user.selectRoles', { defaultValue: 'Select roles' })}
+            placeholder={t('selectRolesPlaceholder', { defaultValue: 'Please Select roles' })}
             options={rolesData}
             optionFilterProp="label"
             loading={rolesLoading}

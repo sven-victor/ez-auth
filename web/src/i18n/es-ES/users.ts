@@ -10,6 +10,9 @@ export default {
   ldapUserNotBound: 'El usuario LDAP no está vinculado a ningún usuario local, por favor vincúlelo.',
   invalidLdapBindingRelationship: 'Relación de enlace LDAP no válida: {{ldap_dn}}',
   ldapUserDNNotSet: 'El DN del usuario LDAP no está configurado, por favor configúrelo.',
+  localUserLDAPDNSet: 'El DN del usuario LDAP está configurado, pero el usuario no es un usuario LDAP, por favor corríjalo.',
+  updateUserSuccess: 'El usuario se ha actualizado correctamente',
+  updateUserError: 'Error al actualizar el usuario: {{error}}',
   sourceLocal: 'Local',
   status: 'Estado',
   statusEnum: {
@@ -104,4 +107,11 @@ export default {
   selectApplication: 'Seleccionar aplicación',
   selectApplicationPlaceholder: 'Seleccione una aplicación',
   applicationRequired: 'Seleccione una aplicación',
+  createUser: 'Crear usuario',
+  assignedApplications: 'Aplicaciones asignadas',
+  systemAttr: 'Sistema',
+  selectRolesPlaceholder: 'Seleccione roles',
+  avatar: 'Avatar',
+  fullNameRequired: 'Ingrese el nombre completo',
+  fullNamePlaceholder: 'Ingrese el nombre completo',
 }; 

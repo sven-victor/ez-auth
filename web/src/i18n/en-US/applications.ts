@@ -57,6 +57,7 @@ export default {
     implicit: 'Implicit',
     hybrid: 'Hybrid',
     password: 'Password',
+    refresh_token: 'Refresh Token',
   },
   setApplicationPasswordTitle: 'Set application independent password',
   setApplicationPasswordDescription: 'Set an application independent password for the current user.',
@@ -68,6 +69,8 @@ export default {
   forceIndependentPasswordTooltip: 'If enabled, users need to be forced to use the app\'s unique password when authenticating, and the unique password needs to be set by the user before use.',
   passwordNotSetDescription: 'The application requires a password to be set for the current user.',
   independentPassword: 'Application Independent Password',
+  userRemoveConfirm: 'Are you sure you want to remove user {{user}}?',
+
   // 应用详情页面
   basicInfo: 'Basic Info',
   roles: 'Roles',
@@ -172,4 +175,10 @@ export default {
   deleteIssuerKeySuccess: 'Issuer key deleted successfully',
   deleteIssuerKeyError: 'Failed to delete issuer key: {{error}}',
   gotoTest: 'Go to Test',
+  setApplicationPasswordError: {
+    E40050: 'The password must be at least {{minLength}} characters',
+    E40051: 'The password must contain at least two combinations of uppercase letters, lowercase letters, and numbers',
+    E40052: 'The password must contain uppercase letters, lowercase letters, and numbers',
+    E40053: 'The password must contain uppercase letters, lowercase letters, numbers, and special characters',
+  },
 }; 

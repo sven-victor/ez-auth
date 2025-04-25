@@ -10,6 +10,9 @@ export default {
   ldapUserNotBound: 'LDAP-Benutzer ist keinem lokalen Benutzer zugeordnet, bitte zuordnen.',
   invalidLdapBindingRelationship: 'Ungültige LDAP-Bindungsbeziehung: {{ldap_dn}}',
   ldapUserDNNotSet: 'LDAP-Benutzer-DN ist nicht festgelegt, bitte festlegen.',
+  localUserLDAPDNSet: 'LDAP-Benutzer-DN ist festgelegt, aber der Benutzer ist kein LDAP-Benutzer, bitte korrigieren.',
+  updateUserSuccess: 'Benutzer erfolgreich aktualisiert',
+  updateUserError: 'Fehler beim Aktualisieren des Benutzers: {{error}}',
   sourceLocal: 'Lokal',
   status: 'Status',
   statusEnum: {
@@ -104,4 +107,11 @@ export default {
   selectApplication: 'Anwendung auswählen',
   selectApplicationPlaceholder: 'Bitte Anwendung auswählen',
   applicationRequired: 'Bitte Anwendung auswählen',
+  createUser: 'Benutzer erstellen',
+  assignedApplications: 'Zugewiesene Anwendungen',
+  selectRolesPlaceholder: 'Bitte Rollen auswählen',
+  systemAttr: 'System',
+  avatar: 'Avatar',
+  fullNameRequired: 'Bitte vollständigen Namen eingeben',
+  fullNamePlaceholder: 'Bitte vollständigen Namen eingeben',
 }; 

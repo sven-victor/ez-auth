@@ -57,6 +57,9 @@ export default {
     implicit: 'Implicit',
     hybrid: 'Hybrid',
     password: 'Lösenord',
+    refresh_token: 'Uppdateringstoken',
+  },
+
   setApplicationPasswordTitle: 'Ställ in applikationsoberoende lösenord',
   setApplicationPasswordDescription: 'Ställ in ett applikationsoberoende lösenord för den aktuella användaren.',
   currentPassword: 'Aktuellt lösenord',
@@ -67,6 +70,8 @@ export default {
   forceIndependentPasswordTooltip: 'Om aktiverat, måste användaren använda det applikationsoberoende lösenordet vid autentisering, och lösenordet måste ställas in av användaren före användning.',
   passwordNotSetDescription: 'Applikationen kräver att ett lösenord ställs in för den aktuella användaren.',
   independentPassword: 'Applikationsoberoende lösenord',
+  userRemoveConfirm: 'Är du säker på att du vill ta bort användaren {{user}}?',
+
   // Applikationsdetaljsida
   basicInfo: 'Grundläggande information',
   roles: 'Roller',
@@ -171,4 +176,10 @@ export default {
   deleteIssuerKeySuccess: 'Utfärdarnyckel raderad',
   deleteIssuerKeyError: 'Kunde inte radera utfärdarnyckel: {{error}}',
   gotoTest: 'Gå till test',
+  setApplicationPasswordError: {
+    E40050: 'Lösenordet måste vara minst {{minLength}} tecken långt',
+    E40051: 'Lösenordet måste innehålla minst två teckenkombinationer av versaler, gemener och siffror',
+    E40052: 'Lösenordet måste innehålla versaler, gemener och siffror',
+    E40053: 'Lösenordet måste innehålla versaler, gemener, siffror och specialtecken',
+  },
 }; 

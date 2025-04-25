@@ -10,6 +10,9 @@ export default {
   ldapUserNotBound: 'مستخدم LDAP غير مرتبط بأي مستخدم محلي، يرجى ربطه.',
   invalidLdapBindingRelationship: 'علاقة ربط LDAP غير صالحة: {{ldap_dn}}',
   ldapUserDNNotSet: 'لم يتم تعيين DN لمستخدم LDAP، يرجى تعيينه.',
+  localUserLDAPDNSet: 'تم تعيين DN لمستخدم LDAP، لكن المستخدم ليس مستخدمًا LDAP، يرجى تصحيحه.',
+  updateUserSuccess: 'تم تحديث المستخدم بنجاح',
+  updateUserError: 'فشل تحديث المستخدم: {{error}}',
   sourceLocal: 'محلي',
   status: 'الحالة',
   statusEnum: {
@@ -104,4 +107,11 @@ export default {
   selectApplication: 'تحديد تطبيق',
   selectApplicationPlaceholder: 'الرجاء تحديد تطبيق',
   applicationRequired: 'الرجاء تحديد تطبيق',
+  createUser: 'إنشاء مستخدم',
+  assignedApplications: 'التطبيقات المعينة',
+  systemAttr: 'النظام',
+  selectRolesPlaceholder: 'الرجاء تحديد الأدوار',
+  avatar: 'الصورة الشخصية',
+  fullNameRequired: 'الرجاء إدخال الاسم الكامل',
+  fullNamePlaceholder: 'الرجاء إدخال الاسم الكامل',
 }; 
