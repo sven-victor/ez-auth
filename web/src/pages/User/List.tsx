@@ -260,6 +260,11 @@ const UserList: React.FC = () => {
           case 'oauth2':
             return <Tag color="green">{t('sourceOauth2', { defaultValue: 'OAuth2' })}</Tag>;
           case 'local':
+            if (record.ldap_dn) {
+              return <Tooltip title={t('localUserLDAPDNSet', { defaultValue: 'LDAP User DN is set, but the user is not a LDAP user, please fix it.' })}>
+                <Tag color="red">{t('sourceLocal', { defaultValue: 'Local' })}</Tag>
+              </Tooltip>;
+            }
             return <Tag color="default">{t('sourceLocal', { defaultValue: 'Local' })}</Tag>;
           default:
             return <Tooltip title={t('sourceUnknown', { defaultValue: 'Source is unknown, please fix it.' })}>
@@ -345,14 +350,14 @@ const UserList: React.FC = () => {
           permission: "authorization:user:resetPassword",
           icon: <KeyOutlined />,
           tooltip: t('resetPassword', { defaultValue: 'Reset Password' }),
-          hidden: (!(record.source === 'local' || (record.source === 'ldap' && record.ldap_dn)) || record.status === 'invalid_ldap_binding') || record.status === 'deleted',
+          hidden: (!((record.source === 'local' && !record.ldap_dn) || (record.source === 'ldap' && record.ldap_dn)) || record.status === 'invalid_ldap_binding') || record.status === 'deleted',
           onClick: () => handleResetPassword(record.id, record.username, record.email),
         }, {
           key: "fixUser",
           permission: "authorization:user:update",
           icon: <ToolOutlined />,
           tooltip: t('fixUser', { defaultValue: 'Fix User' }),
-          hidden: !(((record.source === 'ldap' && !record.ldap_dn) || (record.status === 'invalid_ldap_binding'))),
+          hidden: !((record.source === 'ldap' && !record.ldap_dn) || (record.status === 'invalid_ldap_binding') || (record.source === 'local' && record.ldap_dn)),
           onClick: () => setFixUser(record),
         }, {
           key: "restore",
