@@ -368,6 +368,11 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 		user := w.Find(dbUsers, func(user model.User) bool {
 			return user.LDAPDN == member
 		})
+		if user.LDAPDN == "" {
+			user.Source = "local"
+			app.Users = append(app.Users, user)
+			continue
+		}
 		// Get user information from LDAP
 		searchRequest := ldap.NewSearchRequest(
 			member,
@@ -673,6 +678,7 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 
 // UnassignUserRole unassigns a role from a user, removes the association from the database, and deletes the member info from the application's LDAP entry
 func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID string) error {
+	logger := log.GetContextLogger(ctx)
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
@@ -703,31 +709,33 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 	deleteRequest := (*ldap.DelRequest)(nil)
 	result, err := ldapSession.Search(searchRequest)
 	if err != nil {
-		return fmt.Errorf("failed to search LDAP entries: %w", err)
-	}
-	if len(result.Entries) == 0 {
-		return fmt.Errorf("application not found: %s", app.LDAPDN)
-	}
-	entry := result.Entries[0]
-
-	if members := entry.GetAttributeValues("member"); slices.Contains(members, user.LDAPDN) {
-		modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
-		modifyRequest.Delete("member", []string{user.LDAPDN})
-		// If there are no other members, remove groupOfNames
-		if len(members) == 1 && members[0] == user.LDAPDN {
-			deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
-			modifyRequest = nil
+		if !ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject) {
+			return fmt.Errorf("failed to search LDAP entries: %w", err)
 		}
-	} else if members := entry.GetAttributeValues("uniqueMember"); slices.Contains(members, user.LDAPDN) {
-		modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
-		modifyRequest.Delete("uniqueMember", []string{user.LDAPDN})
-		// If there are no other members, remove groupOfNames
-		if len(members) == 1 && members[0] == user.LDAPDN {
-			deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
-			modifyRequest = nil
-		}
+		level.Warn(logger).Log("msg", "application not found", "dn", app.LDAPDN)
+	} else if len(result.Entries) == 0 {
+		level.Warn(logger).Log("msg", "application not found", "dn", app.LDAPDN)
 	} else {
-		modifyRequest = nil
+		entry := result.Entries[0]
+		if members := entry.GetAttributeValues("member"); slices.Contains(members, user.LDAPDN) {
+			modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
+			modifyRequest.Delete("member", []string{user.LDAPDN})
+			// If there are no other members, remove groupOfNames
+			if len(members) == 1 && members[0] == user.LDAPDN {
+				deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
+				modifyRequest = nil
+			}
+		} else if members := entry.GetAttributeValues("uniqueMember"); slices.Contains(members, user.LDAPDN) {
+			modifyRequest = ldap.NewModifyRequest(app.LDAPDN, nil)
+			modifyRequest.Delete("uniqueMember", []string{user.LDAPDN})
+			// If there are no other members, remove groupOfNames
+			if len(members) == 1 && members[0] == user.LDAPDN {
+				deleteRequest = ldap.NewDelRequest(app.LDAPDN, nil)
+				modifyRequest = nil
+			}
+		} else {
+			modifyRequest = nil
+		}
 	}
 
 	return conn.Transaction(func(tx *gorm.DB) error {
