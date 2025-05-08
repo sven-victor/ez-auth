@@ -140,6 +140,16 @@ const UserDetail: React.FC = () => {
     });
   };
 
+  const handleRemoveApplication = async (applicationId: string) => {
+    try {
+      await removeUserFromApplication(applicationId, user.id);
+      message.success(t('applicationRemoveSuccess', { defaultValue: 'Application removed successfully' }));
+      appListActionRef.current?.reload()
+    } catch (error) {
+      message.error(t('applicationRemoveError', { defaultValue: 'Failed to remove application: {{error}}', error }));
+    }
+  }
+
   const appColumns: TableColumnType<API.Application>[] = [
     {
       title: tApplications('name', { defaultValue: 'Name' }),
@@ -218,7 +228,28 @@ const UserDetail: React.FC = () => {
         }
         return <Tag>{t('noRole', { defaultValue: 'No Role' })}</Tag>;
       }
-    }
+    }, {
+      title: tCommon('actions', { defaultValue: 'Actions' }),
+      key: 'action',
+      render: (_: any, record: API.Application) => (
+        <Space>
+          <PermissionGuard permission="applications:users:unassign">
+            <Popconfirm
+              title={t('applicationRemoveConfirm', { defaultValue: 'Are you sure to remove this application from the user?', application: record.name, user: user.username })}
+              onConfirm={() => handleRemoveApplication(record.id)}
+              okText={tCommon('confirm', { defaultValue: 'Confirm' })}
+              cancelText={tCommon('cancel', { defaultValue: 'Cancel' })}
+            >
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </PermissionGuard>
+        </Space>
+      ),
+    },
   ];
 
   return (

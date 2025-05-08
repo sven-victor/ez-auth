@@ -118,4 +118,7 @@ export default {
   systemAttr: '系统',
   fullNameRequired: '请输入姓名',
   fullNamePlaceholder: '请输入姓名',
+  applicationRemoveSuccess: '应用移除成功',
+  applicationRemoveError: '应用移除失败：{{error}}',
+  applicationRemoveConfirm: '确定要移除应用 {{application}} 吗？',
 }; 

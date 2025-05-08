@@ -114,4 +114,8 @@ export default {
   avatar: 'Avatar',
   fullNameRequired: 'Ingrese el nombre completo',
   fullNamePlaceholder: 'Ingrese el nombre completo',
+
+  applicationRemoveSuccess: 'Aplicaciones eliminadas correctamente',
+  applicationRemoveError: 'Error al eliminar la aplicación: {{error}}',
+  applicationRemoveConfirm: '¿Está seguro de que desea eliminar la aplicación {{application}} del usuario?',
 }; 

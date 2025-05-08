@@ -114,4 +114,8 @@ export default {
   avatar: 'الصورة الشخصية',
   fullNameRequired: 'الرجاء إدخال الاسم الكامل',
   fullNamePlaceholder: 'الرجاء إدخال الاسم الكامل',
+
+  applicationRemoveSuccess: 'تم إزالة التطبيق بنجاح',
+  applicationRemoveError: 'فشل إزالة التطبيق: {{error}}',
+  applicationRemoveConfirm: 'هل أنت متأكد أنك تريد إزالة هذا التطبيق من المستخدم؟',
 }; 
