@@ -90,6 +90,8 @@ definitions:
         type: string
       start_tls:
         type: boolean
+      timeout:
+        $ref: '#/definitions/time.Duration'
       user_attr:
         type: string
       user_filter:
@@ -125,6 +127,8 @@ definitions:
         type: string
       start_tls:
         type: boolean
+      timeout:
+        $ref: '#/definitions/time.Duration'
       user_attr:
         type: string
       user_filter:
@@ -154,6 +158,8 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      force_independent_password:
+        type: boolean
       grant_types:
         items:
           type: string
@@ -316,6 +322,8 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      force_independent_password:
+        type: boolean
       grant_types:
         items:
           type: string
@@ -479,6 +487,8 @@ definitions:
         type: string
       start_tls:
         type: boolean
+      timeout:
+        $ref: '#/definitions/time.Duration'
       user_attr:
         type: string
       user_filter:
@@ -670,6 +680,26 @@ definitions:
     - UserSourceOAuth
   safe.String:
     type: object
+  time.Duration:
+    enum:
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    type: integer
+    x-enum-varnames:
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
   util.ErrorResponse:
     properties:
       code:
@@ -1636,6 +1666,7 @@ paths:
     post:
       consumes:
       - application/json
+      - application/x-www-form-urlencoded
       description: Handles OAuth2 token requests with client credentials grant type
       parameters:
       - description: Grant type (client_credentials)

@@ -322,7 +322,7 @@ type TokenRequest struct {
 // @Summary Get OAuth2 token
 // @Description Handles OAuth2 token requests with client credentials grant type
 // @Tags OIDC
-// @Accept json
+// @Accept json,x-www-form-urlencoded
 // @Produce json
 // @Param grant_type formData string true "Grant type (client_credentials)"
 // @Param client_id formData string true "Client ID"

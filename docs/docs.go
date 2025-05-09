@@ -1485,7 +1485,8 @@ const docTemplate = `{
             "post": {
                 "description": "Handles OAuth2 token requests with client credentials grant type",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "application/x-www-form-urlencoded"
                 ],
                 "produces": [
                     "application/json"
@@ -2135,6 +2136,9 @@ const docTemplate = `{
                 "start_tls": {
                     "type": "boolean"
                 },
+                "timeout": {
+                    "$ref": "#/definitions/time.Duration"
+                },
                 "user_attr": {
                     "type": "string"
                 },
@@ -2192,6 +2196,9 @@ const docTemplate = `{
                 "start_tls": {
                     "type": "boolean"
                 },
+                "timeout": {
+                    "$ref": "#/definitions/time.Duration"
+                },
                 "user_attr": {
                     "type": "string"
                 },
@@ -2231,6 +2238,9 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
+                },
+                "force_independent_password": {
+                    "type": "boolean"
                 },
                 "grant_types": {
                     "type": "array",
@@ -2476,6 +2486,9 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
+                },
+                "force_independent_password": {
+                    "type": "boolean"
                 },
                 "grant_types": {
                     "type": "array",
@@ -2723,6 +2736,9 @@ const docTemplate = `{
                 },
                 "start_tls": {
                     "type": "boolean"
+                },
+                "timeout": {
+                    "$ref": "#/definitions/time.Duration"
                 },
                 "user_attr": {
                     "type": "string"
@@ -3010,6 +3026,29 @@ const docTemplate = `{
         },
         "safe.String": {
             "type": "object"
+        },
+        "time.Duration": {
+            "type": "integer",
+            "enum": [
+                -9223372036854775808,
+                9223372036854775807,
+                1,
+                1000,
+                1000000,
+                1000000000,
+                60000000000,
+                3600000000000
+            ],
+            "x-enum-varnames": [
+                "minDuration",
+                "maxDuration",
+                "Nanosecond",
+                "Microsecond",
+                "Millisecond",
+                "Second",
+                "Minute",
+                "Hour"
+            ]
         },
         "util.ErrorResponse": {
             "type": "object",
