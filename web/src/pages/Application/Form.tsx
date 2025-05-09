@@ -242,6 +242,7 @@ const ApplicationForm: React.FC = () => {
                 return;
               }
             }
+            setGrantTypes([value, ...grantTypes]);
           }}>
 
             {Object.keys(GrantTypes).map((grantType: string) => {
