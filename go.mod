@@ -1,6 +1,8 @@
 module github.com/sven-victor/ez-auth
 
-go 1.23.4
+go 1.24
+
+toolchain go1.24.4
 
 require (
 	github.com/gin-contrib/static v1.1.5
@@ -9,10 +11,11 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/sven-victor/ez-console v1.3.0
+	github.com/sven-victor/ez-console v1.3.1
 	github.com/sven-victor/ez-utils v1.0.0
 	github.com/swaggo/swag v1.16.4
 	github.com/tredoe/osutil v1.5.0
+	golang.org/x/crypto v0.38.0
 	gorm.io/gorm v1.25.12
 )
 
@@ -72,6 +75,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.1.0 // indirect
+	github.com/oschwald/geoip2-golang/v2 v2.0.0-beta.2 // indirect
+	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.3 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
@@ -103,7 +108,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.16.0 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
