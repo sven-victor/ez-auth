@@ -13,6 +13,7 @@ import {
   Divider,
   Modal,
   Tooltip,
+  Popconfirm,
 } from 'antd';
 import {
   UserOutlined,
@@ -21,6 +22,7 @@ import {
   AppstoreOutlined,
   ReloadOutlined,
   UserAddOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getUser, getUserApplications, resetUserPassword } from '@/api/user';
@@ -33,6 +35,7 @@ import { Table, TableRef } from '@/components/Table';
 import Avatar from '@/components/Avatar';
 import NotFound from '../NotFound';
 import { PermissionGuard } from '@/components/PermissionGuard';
+import { removeUserFromApplication } from '@/api/application';
 
 const { Title } = Typography;
 
