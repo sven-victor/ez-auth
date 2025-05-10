@@ -463,7 +463,7 @@ const ApplicationDetail: React.FC = () => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>{application?.name}</div>
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>{getApplicationDisplayName(application, i18n.language)}</div>
               <div style={{ color: '#888', fontWeight: 'normal' }}>{<Typography.Text
                 style={{ width: '50vw' }}
                 ellipsis={{
