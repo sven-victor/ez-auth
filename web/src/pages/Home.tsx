@@ -108,14 +108,6 @@ const Home: React.FC = () => {
     },
   ];
 
-
-  const { data, loading, run: runGetApplications } = useRequest(getMySelfApplications, {
-    defaultParams: [search, 1, 30]
-  });
-  if (userLoading) {
-    return <Loading />
-  }
-
   const { runAsync: changePassword, loading: changePasswordLoading } = useRequest(updateApplicationPassword, {
     manual: true,
     onError: (error: any) => {
@@ -131,6 +123,13 @@ const Home: React.FC = () => {
       message.error(tApplications(`setApplicationPasswordError.${error.code}`, { defaultValue: 'Set application password failed: {{error}}', error: error.message }))
     }
   });
+
+  const { data, loading, run: runGetApplications } = useRequest(getMySelfApplications, {
+    defaultParams: [search, 1, 30]
+  });
+  if (userLoading) {
+    return <Loading />
+  }
 
   const handleChangePassword = (item: API.Application) => {
     const modal = Modal.confirm({
