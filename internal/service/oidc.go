@@ -516,14 +516,18 @@ func (s *OIDCService) GetOpenIDConfiguration(ctx *gin.Context, clientID string) 
 			return nil, fmt.Errorf("invalid global private key type: %T", pk)
 		}
 		privateKeys = append(privateKeys, privateKey)
-
 	}
 
 	idTokenSigningAlgValuesSupported := sets.New[string]()
 
+	var jwksURI string
+
 	for _, privateKey := range privateKeys {
 		switch privateKey.Algorithm {
-		case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512":
+		case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512":
+			idTokenSigningAlgValuesSupported.Insert(privateKey.Algorithm)
+			jwksURI = rootURL + "/api/oauth2/.well-known/jwks/" + app.ResourceID
+		case "HS256", "HS384", "HS512":
 			idTokenSigningAlgValuesSupported.Insert(privateKey.Algorithm)
 		default:
 			level.Error(logger).Log("msg", "unsupported algorithm", "algorithm", privateKey.Algorithm)
@@ -536,7 +540,7 @@ func (s *OIDCService) GetOpenIDConfiguration(ctx *gin.Context, clientID string) 
 		AuthorizationEndpoint:            rootURL + "/ui/oidc/authorize",
 		TokenEndpoint:                    rootURL + "/api/oauth2/token",
 		UserinfoEndpoint:                 rootURL + "/api/oauth2/userinfo",
-		JWKSURI:                          rootURL + "/api/oauth2/.well-known/jwks/" + app.ResourceID,
+		JWKSURI:                          jwksURI,
 		ResponseTypesSupported:           ResponseTypesSupported,
 		SubjectTypesSupported:            []string{"public"},
 		IDTokenSigningAlgValuesSupported: idTokenSigningAlgValuesSupported.List(),
