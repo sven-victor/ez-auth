@@ -38,7 +38,7 @@ func init() {
 // @Summary Register LDAP routes
 // @Description Registers all LDAP Settings endpoints
 // @Tags LDAP
-// @Router /ldap [get]
+// @Router /api/ldap [get]
 func (c *LDAPController) RegisterRoutes(router *gin.RouterGroup) {
 	ldap := router.Group("/ldap")
 	ldap.GET("/settings", c.GetLDAPSettings)
@@ -54,7 +54,7 @@ func (c *LDAPController) RegisterRoutes(router *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} util.Response{data=model.LDAPSettings}
 // @Failure 500 {object} util.ErrorResponse
-// @Router /ldap/settings [get]
+// @Router /api/ldap/settings [get]
 func (c *LDAPController) GetLDAPSettings(ctx *gin.Context) {
 	settings, err := c.svc.GetLDAPSettings(ctx)
 	if err != nil {
@@ -114,7 +114,7 @@ type LDAPSettingsRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /ldap/settings [post]
+// @Router /api/ldap/settings [post]
 func (c *LDAPController) UpdateLDAPSettings(ctx *gin.Context) {
 	// parse request body
 	var req LDAPSettingsRequest
@@ -202,7 +202,7 @@ type LDAPTestRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /ldap/test [post]
+// @Router /api/ldap/test [post]
 func (c *LDAPController) TestLDAPConnection(ctx *gin.Context) {
 	var req LDAPTestRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

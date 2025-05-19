@@ -22,7 +22,7 @@ func (c *EchoController) RegisterRoutes(router *gin.RouterGroup) {
 // @Tags Echo
 // @Produce json
 // @Success 200 {object} map[string]string "Returns a simple OK message"
-// @Router /echo [get]
+// @Router /api/echo [get]
 func (c *EchoController) Get(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "ok"})
 }

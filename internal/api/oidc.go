@@ -65,7 +65,7 @@ func (c *OIDCController) RegisterRoutes(router *gin.RouterGroup) {
 // @Produce json
 // @Success 200 {object} model.OpenIDConfiguration
 // @Failure 500 {object} util.ErrorResponse
-// @Router /oauth2/.well-known/openid-configuration [get]
+// @Router /api/oauth2/.well-known/openid-configuration [get]
 func (c *OIDCController) GetOpenIDConfiguration(ctx *gin.Context) {
 	clientID := ctx.Param("client_id")
 	if clientID == "" {
@@ -92,7 +92,7 @@ func (c *OIDCController) GetOpenIDConfiguration(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} model.JWKS
 // @Failure 500 {object} util.ErrorResponse
-// @Router /oauth2/.well-known/jwks.json [get]
+// @Router /api/oauth2/.well-known/jwks.json [get]
 func (c *OIDCController) GetJWKS(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
@@ -128,7 +128,7 @@ func (c *OIDCController) GetJWKS(ctx *gin.Context) {
 // @Success 302 {string} string "Redirect to the redirect URI"
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /oauth2/authorize [get]
+// @Router /api/oauth2/authorize [get]
 func (c *OIDCController) Authorize(ctx *gin.Context) {
 	nonce := ctx.Query("nonce")
 	clientID := ctx.Query("client_id")
@@ -333,7 +333,7 @@ type TokenRequest struct {
 // @Success 200 {object} model.OIDCToken
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /oauth2/token [post]
+// @Router /api/oauth2/token [post]
 func (c *OIDCController) Token(ctx *gin.Context) {
 	logger := log.GetContextLogger(ctx)
 	var tokenRequest TokenRequest
@@ -504,7 +504,7 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 // @Success 200 {object} model.OIDCUserInfo
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /oauth2/userinfo [get]
+// @Router /api/oauth2/userinfo [get]
 func (c *OIDCController) UserInfo(ctx *gin.Context) {
 	// get user id from context
 	// validate access token

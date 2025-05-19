@@ -52,7 +52,7 @@ func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
 // @Param status query string false "Filter by status"
 // @Success 200 {object} util.PaginationResponse{data=[]consolemodel.User}
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users [get]
+// @Router /api/users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	// Parse query parameters
 	current, _ := strconv.Atoi(ctx.DefaultQuery("current", "1"))
@@ -102,7 +102,7 @@ type CreateUserRequest struct {
 // @Success 201 {object} consolemodel.User
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users [post]
+// @Router /api/users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	var req CreateUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -172,7 +172,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Success 200 {object} util.Response{data=consolemodel.User}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users/{id} [get]
+// @Router /api/users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -216,7 +216,7 @@ type UpdateUserRequest struct {
 // @Success 200 {object} util.Response{data=consolemodel.User}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users/{id} [put]
+// @Router /api/users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -311,7 +311,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Success 204 "No Content"
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users/{id} [delete]
+// @Router /api/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -345,7 +345,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Success 200 {object} util.Response{data=map[string]string{new_password=string}}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users/{id}/reset-password [post]
+// @Router /api/users/{id}/reset-password [post]
 func (c *UserController) ResetPassword(ctx *gin.Context) {
 	userID := ctx.Param("id")
 	if userID == "" {
@@ -396,7 +396,7 @@ type ImportLDAPUsersRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /users/import [post]
+// @Router /api/users/import [post]
 func (c *UserController) ImportLDAPUsers(ctx *gin.Context) {
 	var req ImportLDAPUsersRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

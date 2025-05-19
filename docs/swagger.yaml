@@ -690,6 +690,18 @@ definitions:
     - 1000000000
     - 60000000000
     - 3600000000000
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
     type: integer
     x-enum-varnames:
     - minDuration
@@ -700,6 +712,18 @@ definitions:
     - Second
     - Minute
     - Hour
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
   util.ErrorResponse:
     properties:
       code:
@@ -733,7 +757,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /applications:
+  /api/applications:
     get:
       consumes:
       - application/json
@@ -808,7 +832,7 @@ paths:
       summary: Create application
       tags:
       - model.Application
-  /applications/{id}:
+  /api/applications/{id}:
     delete:
       consumes:
       - application/json
@@ -909,7 +933,7 @@ paths:
       summary: Update application
       tags:
       - Applications
-  /applications/{id}/issuer-keys:
+  /api/applications/{id}/issuer-keys:
     get:
       consumes:
       - application/json
@@ -991,7 +1015,7 @@ paths:
       summary: Create application issuer key
       tags:
       - Applications
-  /applications/{id}/issuer-keys/{issuerKeyId}:
+  /api/applications/{id}/issuer-keys/{issuerKeyId}:
     delete:
       consumes:
       - application/json
@@ -1025,7 +1049,7 @@ paths:
       summary: Delete application issuer key
       tags:
       - Applications
-  /applications/{id}/keys:
+  /api/applications/{id}/keys:
     get:
       consumes:
       - application/json
@@ -1103,7 +1127,7 @@ paths:
       summary: Create application key
       tags:
       - Applications
-  /applications/{id}/keys/{keyId}:
+  /api/applications/{id}/keys/{keyId}:
     delete:
       consumes:
       - application/json
@@ -1137,7 +1161,7 @@ paths:
       summary: Delete application key
       tags:
       - Applications
-  /applications/{id}/password:
+  /api/applications/{id}/password:
     post:
       consumes:
       - application/json
@@ -1172,7 +1196,7 @@ paths:
       summary: Update application password
       tags:
       - Applications
-  /applications/{id}/roles:
+  /api/applications/{id}/roles:
     get:
       consumes:
       - application/json
@@ -1249,7 +1273,7 @@ paths:
       summary: Create application role
       tags:
       - Applications
-  /applications/{id}/roles/{roleId}:
+  /api/applications/{id}/roles/{roleId}:
     delete:
       description: Delete a role for a specific application
       parameters:
@@ -1323,7 +1347,7 @@ paths:
       summary: Update application role
       tags:
       - Applications
-  /applications/{id}/users:
+  /api/applications/{id}/users:
     get:
       consumes:
       - application/json
@@ -1395,7 +1419,7 @@ paths:
       summary: Assign user role
       tags:
       - Applications
-  /applications/{id}/users/{userId}:
+  /api/applications/{id}/users/{userId}:
     delete:
       consumes:
       - application/json
@@ -1429,7 +1453,7 @@ paths:
       summary: Unassign user role
       tags:
       - Applications
-  /applications/import:
+  /api/applications/import:
     post:
       consumes:
       - application/json
@@ -1459,7 +1483,7 @@ paths:
       summary: Import LDAP applications
       tags:
       - Applications
-  /echo:
+  /api/echo:
     get:
       description: Returns a simple OK message to test API connectivity
       produces:
@@ -1474,14 +1498,14 @@ paths:
       summary: Test API connectivity
       tags:
       - Echo
-  /ldap:
+  /api/ldap:
     get:
       description: Registers all LDAP Settings endpoints
       responses: {}
       summary: Register LDAP routes
       tags:
       - LDAP
-  /ldap/settings:
+  /api/ldap/settings:
     get:
       consumes:
       - application/json
@@ -1534,7 +1558,7 @@ paths:
       summary: Update LDAP settings
       tags:
       - LDAP
-  /ldap/test:
+  /api/ldap/test:
     post:
       consumes:
       - application/json
@@ -1564,7 +1588,7 @@ paths:
       summary: Test LDAP connection
       tags:
       - LDAP
-  /oauth2/.well-known/jwks.json:
+  /api/oauth2/.well-known/jwks.json:
     get:
       consumes:
       - application/json
@@ -1583,7 +1607,7 @@ paths:
       summary: Get JWKS
       tags:
       - OIDC
-  /oauth2/.well-known/openid-configuration:
+  /api/oauth2/.well-known/openid-configuration:
     get:
       consumes:
       - application/json
@@ -1602,7 +1626,7 @@ paths:
       summary: Get OpenID configuration
       tags:
       - OIDC
-  /oauth2/authorize:
+  /api/oauth2/authorize:
     get:
       consumes:
       - application/json
@@ -1662,7 +1686,7 @@ paths:
       summary: Get OAuth2 authorization
       tags:
       - OIDC
-  /oauth2/token:
+  /api/oauth2/token:
     post:
       consumes:
       - application/json
@@ -1714,7 +1738,7 @@ paths:
       summary: Get OAuth2 token
       tags:
       - OIDC
-  /oauth2/userinfo:
+  /api/oauth2/userinfo:
     get:
       consumes:
       - application/json
@@ -1739,7 +1763,7 @@ paths:
       summary: Get user info
       tags:
       - OIDC
-  /users:
+  /api/users:
     get:
       consumes:
       - application/json
@@ -1818,7 +1842,7 @@ paths:
       summary: Create user
       tags:
       - Users
-  /users/{id}:
+  /api/users/{id}:
     delete:
       consumes:
       - application/json
@@ -1917,7 +1941,7 @@ paths:
       summary: Update user
       tags:
       - Users
-  /users/{id}/reset-password:
+  /api/users/{id}/reset-password:
     post:
       consumes:
       - application/json
@@ -1958,7 +1982,7 @@ paths:
       summary: Reset password
       tags:
       - Users
-  /users/import:
+  /api/users/import:
     post:
       consumes:
       - application/json

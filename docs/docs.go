@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/applications": {
+        "/api/applications": {
             "get": {
                 "description": "Get a paginated list of applications with optional keyword filtering",
                 "consumes": [
@@ -137,7 +137,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/import": {
+        "/api/applications/import": {
             "post": {
                 "description": "Import applications from LDAP directory",
                 "consumes": [
@@ -183,7 +183,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}": {
+        "/api/applications/{id}": {
             "get": {
                 "description": "Get detailed information about a specific application",
                 "consumes": [
@@ -344,7 +344,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/issuer-keys": {
+        "/api/applications/{id}/issuer-keys": {
             "get": {
                 "description": "Get all issuer keys for a specific application",
                 "consumes": [
@@ -481,7 +481,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/issuer-keys/{issuerKeyId}": {
+        "/api/applications/{id}/issuer-keys/{issuerKeyId}": {
             "delete": {
                 "description": "Delete an issuer key for a specific application",
                 "consumes": [
@@ -532,7 +532,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/keys": {
+        "/api/applications/{id}/keys": {
             "get": {
                 "description": "Get all keys for a specific application",
                 "consumes": [
@@ -663,7 +663,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/keys/{keyId}": {
+        "/api/applications/{id}/keys/{keyId}": {
             "delete": {
                 "description": "Delete a key for a specific application",
                 "consumes": [
@@ -714,7 +714,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/password": {
+        "/api/applications/{id}/password": {
             "post": {
                 "description": "Update the password for a specific application",
                 "consumes": [
@@ -767,7 +767,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/roles": {
+        "/api/applications/{id}/roles": {
             "get": {
                 "description": "Get all roles for a specific application",
                 "consumes": [
@@ -892,7 +892,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/roles/{roleId}": {
+        "/api/applications/{id}/roles/{roleId}": {
             "put": {
                 "description": "Update a role for a specific application",
                 "consumes": [
@@ -1007,7 +1007,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/users": {
+        "/api/applications/{id}/users": {
             "get": {
                 "description": "Get all users for a specific application",
                 "consumes": [
@@ -1120,7 +1120,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/users/{userId}": {
+        "/api/applications/{id}/users/{userId}": {
             "delete": {
                 "description": "Unassign a role from a user for a specific application",
                 "consumes": [
@@ -1171,7 +1171,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/echo": {
+        "/api/echo": {
             "get": {
                 "description": "Returns a simple OK message to test API connectivity",
                 "produces": [
@@ -1194,7 +1194,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/ldap": {
+        "/api/ldap": {
             "get": {
                 "description": "Registers all LDAP Settings endpoints",
                 "tags": [
@@ -1204,7 +1204,7 @@ const docTemplate = `{
                 "responses": {}
             }
         },
-        "/ldap/settings": {
+        "/api/ldap/settings": {
             "get": {
                 "description": "Retrieves the current LDAP configuration settings",
                 "consumes": [
@@ -1289,7 +1289,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/ldap/test": {
+        "/api/ldap/test": {
             "post": {
                 "description": "Tests the LDAP connection with provided credentials",
                 "consumes": [
@@ -1335,7 +1335,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/oauth2/.well-known/jwks.json": {
+        "/api/oauth2/.well-known/jwks.json": {
             "get": {
                 "description": "Retrieves the JSON Web Key Set for token validation",
                 "consumes": [
@@ -1364,7 +1364,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/oauth2/.well-known/openid-configuration": {
+        "/api/oauth2/.well-known/openid-configuration": {
             "get": {
                 "description": "Retrieves the OpenID Connect configuration information",
                 "consumes": [
@@ -1393,7 +1393,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/oauth2/authorize": {
+        "/api/oauth2/authorize": {
             "get": {
                 "description": "Handles OAuth2 authorization requests with client credentials grant type",
                 "consumes": [
@@ -1481,7 +1481,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/oauth2/token": {
+        "/api/oauth2/token": {
             "post": {
                 "description": "Handles OAuth2 token requests with client credentials grant type",
                 "consumes": [
@@ -1558,7 +1558,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/oauth2/userinfo": {
+        "/api/oauth2/userinfo": {
             "get": {
                 "security": [
                     {
@@ -1598,7 +1598,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/api/users": {
             "get": {
                 "description": "Get a paginated list of users with optional filtering by username, email, and status",
                 "consumes": [
@@ -1720,7 +1720,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/import": {
+        "/api/users/import": {
             "post": {
                 "description": "Import users from LDAP directory",
                 "consumes": [
@@ -1766,7 +1766,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}": {
+        "/api/users/{id}": {
             "get": {
                 "description": "Get detailed information about a specific user",
                 "consumes": [
@@ -1924,7 +1924,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/reset-password": {
+        "/api/users/{id}/reset-password": {
             "post": {
                 "description": "Reset a user's password",
                 "consumes": [
@@ -3037,7 +3037,19 @@ const docTemplate = `{
                 1000000,
                 1000000000,
                 60000000000,
-                3600000000000
+                3600000000000,
+                -9223372036854775808,
+                9223372036854775807,
+                1,
+                1000,
+                1000000,
+                1000000000,
+                60000000000,
+                3600000000000,
+                1,
+                1000,
+                1000000,
+                1000000000
             ],
             "x-enum-varnames": [
                 "minDuration",
@@ -3047,7 +3059,19 @@ const docTemplate = `{
                 "Millisecond",
                 "Second",
                 "Minute",
-                "Hour"
+                "Hour",
+                "minDuration",
+                "maxDuration",
+                "Nanosecond",
+                "Microsecond",
+                "Millisecond",
+                "Second",
+                "Minute",
+                "Hour",
+                "Nanosecond",
+                "Microsecond",
+                "Millisecond",
+                "Second"
             ]
         },
         "util.ErrorResponse": {

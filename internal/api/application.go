@@ -69,7 +69,7 @@ func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
 // @Param keywords query string false "Search keywords"
 // @Success 200 {object} util.Response{data=[]model.Application}
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications [get]
+// @Router /api/applications [get]
 func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "10"))
@@ -113,7 +113,7 @@ func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 // @Success 201 {object} util.Response{data=model.Application}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications [post]
+// @Router /api/applications [post]
 func (c *ApplicationController) CreateApplication(ctx *gin.Context) {
 	var req model.Application
 
@@ -147,7 +147,7 @@ func (c *ApplicationController) CreateApplication(ctx *gin.Context) {
 // @Success 200 {object} util.Response{data=model.Application}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id} [get]
+// @Router /api/applications/{id} [get]
 func (c *ApplicationController) GetApplication(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	app, err := c.svc.GetApplication(ctx, appID)
@@ -190,7 +190,7 @@ type UpdateApplicationRequest struct {
 // @Success 200 {object} util.Response{data=model.Application}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id} [put]
+// @Router /api/applications/{id} [put]
 func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	var req UpdateApplicationRequest
@@ -262,7 +262,7 @@ func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id} [delete]
+// @Router /api/applications/{id} [delete]
 func (c *ApplicationController) DeleteApplication(ctx *gin.Context) {
 	appID := ctx.Param("id")
 
@@ -289,7 +289,7 @@ func (c *ApplicationController) DeleteApplication(ctx *gin.Context) {
 // @Success 201 {object} util.Response{data=model.ApplicationRole}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/roles [post]
+// @Router /api/applications/{id}/roles [post]
 func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	var role model.ApplicationRole
@@ -333,7 +333,7 @@ type UpdateApplicationRoleRequest struct {
 // @Success 200 {object} util.Response{data=model.ApplicationRole}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/roles/{roleId} [put]
+// @Router /api/applications/{id}/roles/{roleId} [put]
 func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	roleID := ctx.Param("roleId")
@@ -372,7 +372,7 @@ func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 // @Success 200 {array} util.Response{data=[]model.ApplicationRole}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/roles [get]
+// @Router /api/applications/{id}/roles [get]
 func (c *ApplicationController) ListApplicationRoles(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	roles, err := c.svc.ListApplicationRoles(ctx, appID)
@@ -397,7 +397,7 @@ func (c *ApplicationController) ListApplicationRoles(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/roles/{roleId} [delete]
+// @Router /api/applications/{id}/roles/{roleId} [delete]
 func (c *ApplicationController) DeleteApplicationRole(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	roleID := ctx.Param("roleId")
@@ -430,7 +430,7 @@ type AssignUserRoleRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/users [post]
+// @Router /api/applications/{id}/users [post]
 func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	var req AssignUserRoleRequest
@@ -465,7 +465,7 @@ func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/users/{userId} [delete]
+// @Router /api/applications/{id}/users/{userId} [delete]
 func (c *ApplicationController) UnassignUserRole(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	userID := ctx.Param("userId")
@@ -492,7 +492,7 @@ func (c *ApplicationController) UnassignUserRole(ctx *gin.Context) {
 // @Success 200 {array} util.Response{data=[]model.User}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/users [get]
+// @Router /api/applications/{id}/users [get]
 func (c *ApplicationController) ListApplicationUsers(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	users, err := c.svc.ListApplicationUsers(ctx, appID)
@@ -523,7 +523,7 @@ type ImportLDAPApplicationsRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/import [post]
+// @Router /api/applications/import [post]
 func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 
 	type ImportLDAPApplicationsRequest struct {
@@ -591,7 +591,7 @@ type CreateApplicationKeyRequest struct {
 // @Success 201 {object} util.Response{data=gin.H{client_id=string, client_secret=string}}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/keys [post]
+// @Router /api/applications/{id}/keys [post]
 func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 
@@ -639,7 +639,7 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 // @Success 200 {array} util.Response{data=[]model.ApplicationKey}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/keys [get]
+// @Router /api/applications/{id}/keys [get]
 func (c *ApplicationController) ListApplicationKeys(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	keys, err := c.svc.ListApplicationKeys(ctx, appID)
@@ -665,7 +665,7 @@ func (c *ApplicationController) ListApplicationKeys(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/keys/{keyId} [delete]
+// @Router /api/applications/{id}/keys/{keyId} [delete]
 func (c *ApplicationController) DeleteApplicationKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	keyID := ctx.Param("keyId")
@@ -698,7 +698,7 @@ type CreateApplicationIssuerKeyRequest struct {
 // @Success 201 {object} util.Response{data=gin.H{issuer_key_id=string}}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer-keys [post]
+// @Router /api/applications/{id}/issuer-keys [post]
 func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 
@@ -737,7 +737,7 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 // @Success 200 {array} util.Response{data=[]model.ApplicationPrivateKey}
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer-keys [get]
+// @Router /api/applications/{id}/issuer-keys [get]
 func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	keys, err := c.svc.ListApplicationIssuerKeys(ctx, appID)
@@ -763,7 +763,7 @@ func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/issuer-keys/{issuerKeyId} [delete]
+// @Router /api/applications/{id}/issuer-keys/{issuerKeyId} [delete]
 func (c *ApplicationController) DeleteApplicationIssuerKey(ctx *gin.Context) {
 	appID := ctx.Param("id")
 	issuerKeyID := ctx.Param("issuerKeyId")
@@ -794,7 +794,7 @@ type UpdateApplicationPasswordRequest struct {
 // @Success 200 {object} util.Response
 // @Failure 400 {object} util.ErrorResponse
 // @Failure 500 {object} util.ErrorResponse
-// @Router /applications/{id}/password [post]
+// @Router /api/applications/{id}/password [post]
 func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
 	appID := ctx.Param("id")
 
