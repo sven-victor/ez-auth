@@ -303,6 +303,7 @@ func (s *OIDCService) GetJWKS(ctx context.Context, appID string) (*model.JWKS, e
 		default:
 			return nil, fmt.Errorf("invalid global private key type: %T", k)
 		}
+		privateKey.ResourceID = globalJWT.KeyID
 		privateKeys = append(privateKeys, privateKey)
 	}
 	keys := make([]model.JWK, 0, len(privateKeys))
