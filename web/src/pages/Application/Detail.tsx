@@ -311,6 +311,14 @@ const ApplicationDetail: React.FC = () => {
             </Space>
           }
         }
+        if (application?.source === 'ldap') {
+          return <Space>
+            {name}
+            <Tooltip title={t('invalidLdapBindingRelationship', { defaultValue: 'Invalid LDAP binding relationship: local user is not bound to LDAP user', })}>
+              <Tag color="red">{tUser('sourceLocal', { defaultValue: 'Local' })}</Tag>
+            </Tooltip>
+          </Space>
+        }
         return name
       },
     },
@@ -624,6 +632,7 @@ const ApplicationDetail: React.FC = () => {
         currentUser={users}
         roles={roles}
         onSuccess={fetchApplication}
+        userSource={application?.source === 'ldap' ? 'ldap' : undefined}
       />
 
       {/* Create issuer key modal */}

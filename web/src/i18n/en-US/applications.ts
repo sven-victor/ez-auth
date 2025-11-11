@@ -49,6 +49,10 @@ export default {
   redirectUrisRequired: 'Please enter a valid redirect URI',
   grantTypesRequired: 'Please select grant types',
   statusRequired: 'Please select status',
+  source: 'Data Source',
+  sourceRequired: 'Please select data source',
+  sourceLocal: 'Local',
+  sourceLdap: 'LDAP',
   displayName: 'Display Name',
   displayNamePlaceholder: 'Please enter application display name',
   grantType: {

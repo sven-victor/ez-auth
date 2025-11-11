@@ -476,7 +476,7 @@ const UserList: React.FC = () => {
           request={async ({ current, page_size }) => {
             try {
               const { source, status, keywords } = queryParams.current
-              return await getUsers(keywords, status, current, page_size, source)
+              return await getUsers(source, keywords, status, current, page_size)
             } catch (error) {
               message.error(t('loadError', { defaultValue: 'Failed to load users', error: error }));
               return Promise.reject(error);

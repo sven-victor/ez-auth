@@ -44,6 +44,7 @@ type Application struct {
 	DescriptionI18n map[string]string `gorm:"serializer:json" json:"description_i18n,omitempty"`
 	Icon            string            `gorm:"type:varchar(500)" json:"icon"`
 	Status          string            `gorm:"type:varchar(20);not null;default:'active'" json:"status"` // active, inactive
+	Source          string            `gorm:"type:varchar(20);not null;default:'ldap'" json:"source"`   // ldap, local
 	LDAPDN          string            `gorm:"column:ldap_dn;size:255" json:"ldap_dn,omitempty"`
 	URI             string            `gorm:"type:varchar(500)" json:"uri,omitempty"`
 	GrantTypes      []string          `gorm:"type:varchar(255);serializer:json" json:"grant_types,omitempty"`
@@ -76,6 +77,7 @@ type UserApplication struct {
 	DescriptionI18n          map[string]string `gorm:"serializer:json" json:"description_i18n,omitempty"`
 	Icon                     string            `gorm:"type:varchar(500)" json:"icon"`
 	Status                   string            `gorm:"type:varchar(20);not null;default:'active'" json:"status"` // active, inactive
+	Source                   string            `gorm:"type:varchar(20);not null;default:'ldap'" json:"source"`   // ldap, local
 	LDAPDN                   string            `gorm:"column:ldap_dn;size:255" json:"ldap_dn,omitempty"`
 	URI                      string            `gorm:"type:varchar(500)" json:"uri,omitempty"`
 	GrantTypes               []string          `gorm:"type:varchar(255);serializer:json" json:"grant_types,omitempty"`

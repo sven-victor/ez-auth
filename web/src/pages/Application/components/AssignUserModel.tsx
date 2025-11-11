@@ -12,6 +12,7 @@ export const AssignUserModel = ({
   setVisible,
   currentUser,
   roles,
+  userSource,
 }: {
   onSuccess: () => void,
   id: string,
@@ -19,6 +20,7 @@ export const AssignUserModel = ({
   setVisible: (visible: boolean) => void,
   currentUser: API.User[],
   roles: API.ApplicationRole[],
+  userSource?: 'ldap'
 }) => {
   const { t } = useTranslation("applications");
   const { t: tCommon } = useTranslation("common");
@@ -42,7 +44,7 @@ export const AssignUserModel = ({
   });
 
   const { run: handleUserSearch, loading: userSearchLoading } = useRequest(async (value?: string) => {
-    return await getUsers(value)
+    return await getUsers(userSource, value)
   }, {
     onSuccess: (data) => {
       const filteredUsers = data.data.filter(user =>

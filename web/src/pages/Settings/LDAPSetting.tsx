@@ -256,33 +256,6 @@ const LDAPSettingsForm: React.FC = () => {
         </Form.Item>
 
         <Form.Item
-          label={t('settings.ldap.applicationBaseDn', { defaultValue: 'Application Base DN' })}
-          name="application_base_dn"
-          rules={[{ required: isEnabled, message: t('settings.ldap.applicationBaseDnRequired', { defaultValue: 'Application Base DN is required' }) }]}
-        >
-          <Input disabled={!isEnabled} hidden autoComplete='off' placeholder="ou=applications,dc=example,dc=com" />
-        </Form.Item>
-
-        <Form.Item
-          label={t('settings.ldap.applicationObjectClass', { defaultValue: 'Application Object Class' })}
-          name="application_object_class"
-        >
-          <Select disabled={!isEnabled} defaultValue="groupOfNames" options={[{
-            label: 'groupOfNames',
-            value: 'groupOfNames',
-          }, {
-            label: 'groupOfUniqueNames',
-            value: 'groupOfUniqueNames',
-          }]} />
-        </Form.Item>
-        <Form.Item
-          label={t('settings.ldap.applicationFilter')}
-          name="application_filter"
-          help={t('settings.ldap.applicationFilterHelp', { defaultValue: 'Filter to apply to applications, example: (|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))' })}
-        >
-          <Input disabled={!isEnabled} defaultValue="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" hidden autoComplete='off' placeholder="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" />
-        </Form.Item>
-        <Form.Item
           label={t('settings.ldap.userAttr')}
           name="user_attr"
           rules={[{ required: isEnabled, message: t('settings.ldap.userAttrRequired') }]}
@@ -313,6 +286,60 @@ const LDAPSettingsForm: React.FC = () => {
         >
           <Input disabled={!isEnabled} />
         </Form.Item>
+        <Divider>{t('settings.ldap.applicationDivider', { defaultValue: 'Application LDAP Configuration' })}</Divider>
+
+        <Form.Item
+          label={t('settings.ldap.applicationLdapEnabled', { defaultValue: 'Enable Application LDAP' })}
+          name="application_ldap_enabled"
+          valuePropName="checked"
+          tooltip={t('settings.ldap.applicationLdapEnabledTooltip', { defaultValue: 'Enable LDAP-based application management. When enabled, applications can be stored in LDAP directory.' })}
+        >
+          <Switch disabled={!isEnabled} />
+        </Form.Item>
+
+        <Form.Item dependencies={['application_ldap_enabled']}>
+          {({ getFieldValue }) => {
+            if (!getFieldValue('application_ldap_enabled')) {
+              return null
+            }
+            return <React.Fragment>
+              <Form.Item
+                label={t('settings.ldap.applicationBaseDn', { defaultValue: 'Application Base DN' })}
+                name="application_base_dn"
+                dependencies={['application_ldap_enabled']}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    required: isEnabled && getFieldValue('application_ldap_enabled'),
+                    message: t('settings.ldap.applicationBaseDnRequired', { defaultValue: 'Application Base DN is required' })
+                  })
+                ]}
+              >
+                <Input disabled={!isEnabled} hidden autoComplete='off' placeholder="ou=applications,dc=example,dc=com" />
+              </Form.Item>
+
+              <Form.Item
+                label={t('settings.ldap.applicationObjectClass', { defaultValue: 'Application Object Class' })}
+                name="application_object_class"
+              >
+                <Select disabled={!isEnabled} defaultValue="groupOfNames" options={[{
+                  label: 'groupOfNames',
+                  value: 'groupOfNames',
+                }, {
+                  label: 'groupOfUniqueNames',
+                  value: 'groupOfUniqueNames',
+                }]} />
+              </Form.Item>
+              <Form.Item
+                label={t('settings.ldap.applicationFilter')}
+                name="application_filter"
+                help={t('settings.ldap.applicationFilterHelp', { defaultValue: 'Filter to apply to applications, example: (|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))' })}
+              >
+                <Input disabled={!isEnabled} defaultValue="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" hidden autoComplete='off' placeholder="(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames))" />
+              </Form.Item>
+            </React.Fragment>
+          }}
+        </Form.Item>
+
 
         <Divider>{t('settings.ldap.tlsDivider')}</Divider>
 

@@ -39,64 +39,86 @@ func NewApplicationService(svc server.Service) *ApplicationService {
 
 // CreateApplication creates a new application
 func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.Application) error {
-	ldapSession, err := s.Service.GetLDAPSession(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get LDAP session: %w", err)
-	}
-	defer ldapSession.Close()
-
-	applicationObjectClass, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationObjectClass, "groupOfNames")
-	if err != nil {
-		return fmt.Errorf("failed to get LDAP application object class: %w", err)
+	// Set default source to local if not specified
+	if app.Source == "" {
+		app.Source = "local"
 	}
 
-	baseDN, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
+	// Check if application LDAP is enabled
+	applicationLDAPEnabled, err := s.GetBoolSetting(ctx, model.SettingLDAPApplicationLDAPEnabled, false)
 	if err != nil {
-		return fmt.Errorf("failed to get LDAP application base DN: %w", err)
+		return fmt.Errorf("failed to get application LDAP enabled setting: %w", err)
 	}
-	if len(baseDN) == 0 {
-		return fmt.Errorf("LDAP application base DN is empty")
+
+	// If source is LDAP but LDAP is not enabled, return error
+	if app.Source == "ldap" && !applicationLDAPEnabled {
+		return fmt.Errorf("LDAP application is not enabled")
 	}
-	dn := fmt.Sprintf("cn=%s,%s", app.Name, baseDN)
+
 	var addRequest *ldap.AddRequest
+	var applicationObjectClass string
+	var baseDN string
 
-	if len(app.LDAPAttrs) > 0 {
-		addRequest = ldap.NewAddRequest(dn, nil)
-		entryAttrs := map[string][]string{}
-		for _, attr := range app.LDAPAttrs {
-			if attr.Name == "cn" {
-				app.Name = attr.Value
-			}
-			if _, ok := entryAttrs[attr.Name]; !ok {
-				entryAttrs[attr.Name] = []string{attr.Value}
-			} else {
-				entryAttrs[attr.Name] = append(entryAttrs[attr.Name], attr.Value)
-			}
+	// Only process LDAP logic if source is ldap
+	if app.Source == "ldap" {
+		ldapSession, err := s.Service.GetLDAPSession(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP session: %w", err)
 		}
-		if cn, ok := entryAttrs["cn"]; !ok || len(cn) == 0 || app.Name == "" {
-			return fmt.Errorf("application name is empty")
+		defer ldapSession.Close()
+
+		applicationObjectClass, err = s.GetStringSetting(ctx, model.SettingLDAPApplicationObjectClass, "groupOfNames")
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP application object class: %w", err)
 		}
-		for name, attr := range entryAttrs {
-			addRequest.Attribute(name, attr)
+
+		baseDN, err = s.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
+		if err != nil {
+			return fmt.Errorf("failed to get LDAP application base DN: %w", err)
 		}
-		addRequest.DN = fmt.Sprintf("cn=%s,%s", app.Name, baseDN)
-		app.LDAPDN = addRequest.DN
-	} else {
-		if len(app.Users) > 0 {
+		if len(baseDN) == 0 {
+			return fmt.Errorf("LDAP application base DN is empty")
+		}
+		dn := fmt.Sprintf("cn=%s,%s", app.Name, baseDN)
+
+		if len(app.LDAPAttrs) > 0 {
 			addRequest = ldap.NewAddRequest(dn, nil)
-			addRequest.Attribute("cn", []string{app.Name})
-			addRequest.Attribute("objectClass", []string{"top", applicationObjectClass})
-			userDNs := w.Filter(w.Map(app.Users, func(user model.User) string {
-				return user.LDAPDN
-			}), func(dn string) bool {
-				return len(dn) > 0
-			})
-			if applicationObjectClass == "groupOfUniqueNames" {
-				addRequest.Attribute("uniqueMember", userDNs)
-			} else {
-				addRequest.Attribute("member", userDNs)
+			entryAttrs := map[string][]string{}
+			for _, attr := range app.LDAPAttrs {
+				if attr.Name == "cn" {
+					app.Name = attr.Value
+				}
+				if _, ok := entryAttrs[attr.Name]; !ok {
+					entryAttrs[attr.Name] = []string{attr.Value}
+				} else {
+					entryAttrs[attr.Name] = append(entryAttrs[attr.Name], attr.Value)
+				}
 			}
-			app.LDAPDN = dn
+			if cn, ok := entryAttrs["cn"]; !ok || len(cn) == 0 || app.Name == "" {
+				return fmt.Errorf("application name is empty")
+			}
+			for name, attr := range entryAttrs {
+				addRequest.Attribute(name, attr)
+			}
+			addRequest.DN = fmt.Sprintf("cn=%s,%s", app.Name, baseDN)
+			app.LDAPDN = addRequest.DN
+		} else {
+			if len(app.Users) > 0 {
+				addRequest = ldap.NewAddRequest(dn, nil)
+				addRequest.Attribute("cn", []string{app.Name})
+				addRequest.Attribute("objectClass", []string{"top", applicationObjectClass})
+				userDNs := w.Filter(w.Map(app.Users, func(user model.User) string {
+					return user.LDAPDN
+				}), func(dn string) bool {
+					return len(dn) > 0
+				})
+				if applicationObjectClass == "groupOfUniqueNames" {
+					addRequest.Attribute("uniqueMember", userDNs)
+				} else {
+					addRequest.Attribute("member", userDNs)
+				}
+				app.LDAPDN = dn
+			}
 		}
 	}
 
@@ -143,7 +165,14 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 			if err := tx.Create(&userRoles).Error; err != nil {
 				return fmt.Errorf("failed to create application user roles: %w", err)
 			}
-			if addRequest != nil {
+			// Only create LDAP entry if source is ldap
+			if addRequest != nil && app.Source == "ldap" {
+				// Need to get LDAP session again for creating entry
+				ldapSession, err := s.Service.GetLDAPSession(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to get LDAP session: %w", err)
+				}
+				defer ldapSession.Close()
 				// Create LDAP entry
 				if err := ldapSession.Add(addRequest); err != nil {
 					return fmt.Errorf("failed to create LDAP entry: %w", err)
@@ -157,12 +186,6 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 
 // UpdateApplication updates application information
 func (s *ApplicationService) UpdateApplication(ctx context.Context, app *model.Application) error {
-	ldapSession, err := s.Service.GetLDAPSession(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get LDAP session: %w", err)
-	}
-	defer ldapSession.Close()
-
 	// Update database record
 	dbConn := db.Session(ctx)
 	return dbConn.Transaction(func(tx *gorm.DB) error {
@@ -193,6 +216,11 @@ func (s *ApplicationService) UpdateApplicationEntry(ctx context.Context, appID s
 	app, err := s.GetApplication(ctx, appID)
 	if err != nil {
 		return fmt.Errorf("failed to get application: %w", err)
+	}
+
+	// Check if application source is local
+	if app.Source == "local" {
+		return fmt.Errorf("cannot update LDAP attributes for local application")
 	}
 	entryAttrs := map[string][]string{}
 	for _, attr := range entry {
@@ -289,19 +317,6 @@ func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string
 
 // GetApplication retrieves application details
 func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (*model.Application, error) {
-
-	ldapSession, err := s.Service.GetLDAPSession(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LDAP session: %w", err)
-	}
-	defer ldapSession.Close()
-	settings, err := s.Service.GetLDAPSettings(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
-	}
-	if !settings.Enabled {
-		return nil, fmt.Errorf("LDAP is not enabled")
-	}
 	var app model.Application
 	dbConn := db.Session(ctx)
 	if err := dbConn.Unscoped().Where("resource_id = ?", appID).First(&app).Error; err != nil {
@@ -313,6 +328,34 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 	}
 	if app.DeletedAt.Valid {
 		app.Status = "deleted"
+	}
+
+	// If source is local, return directly without fetching LDAP data
+	if app.Source == "local" {
+		// Get application ldap users and roles
+		err := dbConn.Model(&model.User{}).
+			Select("t_user.*,t_application_role.name as role,t_application_user.role_id").
+			Joins("JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ? and t_application_user.deleted_at IS NULL", appID).
+			Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ? and t_application_role.deleted_at IS NULL", appID).
+			Find(&app.Users).Error
+		if err != nil {
+			return nil, fmt.Errorf("failed to get application users: %w", err)
+		}
+		return &app, nil
+	}
+
+	// For LDAP applications, fetch LDAP data
+	ldapSession, err := s.Service.GetLDAPSession(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get LDAP session: %w", err)
+	}
+	defer ldapSession.Close()
+	settings, err := s.Service.GetLDAPSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
+	if !settings.Enabled {
+		return nil, fmt.Errorf("LDAP is not enabled")
 	}
 
 	if app.LDAPDN == "" {

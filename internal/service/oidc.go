@@ -147,29 +147,11 @@ type RoleApplication struct {
 }
 
 func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *model.OIDCUserInfo, scopeList []string) (*model.Application, error) {
-	if user.LDAPDN == "" {
-		return nil, fmt.Errorf("user not found")
-	}
-
-	settings, err := s.Service.GetLDAPSettings(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
-	}
-	if !settings.Enabled {
-		return nil, fmt.Errorf("LDAP is not enabled")
-	}
-
-	ldapSession, err := s.Service.GetLDAPSession(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LDAP session: %w", err)
-	}
-	defer ldapSession.Close()
-
 	// Get application and role information from database based on clientID
 	var app RoleApplication
 	if err := db.Session(ctx).Model(&model.Application{}).
 		Select("t_application.*, t_application_role.name as role, t_application_role.resource_id as role_id").
-		Joins("left join t_application_key on t_application.resource_id = t_application_key.application_id").
+		Joins("join t_application_key on t_application.resource_id = t_application_key.application_id").
 		Joins("left join t_application_user on t_application.resource_id = t_application_user.application_id and t_application_user.user_id = ?", user.Sub).
 		Joins("left join t_application_role on t_application.resource_id = t_application_role.application_id  and t_application_user.role_id = t_application_role.resource_id").
 		Where("t_application_key.client_id = ? and t_application.status = ? and t_application.deleted_at is null", clientID, "active").
@@ -183,26 +165,59 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 		}
 		return nil, fmt.Errorf("failed to get application: %w", err)
 	}
-	if app.LDAPDN == "" {
-		return nil, fmt.Errorf("application LDAPDN is empty")
+
+	// Check if application is local or LDAP
+	if app.Source == "local" {
+		// For local application, check if user is assigned in database
+		var appUser model.ApplicationUser
+		if err := db.Session(ctx).Where("application_id = ? AND user_id = ?", app.ResourceID, user.Sub).First(&appUser).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, fmt.Errorf("user not assigned to application")
+			}
+			return nil, fmt.Errorf("failed to check user assignment: %w", err)
+		}
+	} else {
+		// For LDAP application, user must be LDAP user
+		if user.LDAPDN == "" {
+			return nil, fmt.Errorf("LDAP user required for LDAP application")
+		}
+
+		settings, err := s.Service.GetLDAPSettings(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get settings: %w", err)
+		}
+		if !settings.Enabled {
+			return nil, fmt.Errorf("LDAP is not enabled")
+		}
+
+		ldapSession, err := s.Service.GetLDAPSession(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get LDAP session: %w", err)
+		}
+		defer ldapSession.Close()
+
+		if app.LDAPDN == "" {
+			return nil, fmt.Errorf("application LDAPDN is empty")
+		}
+
+		entry, err := s.Service.GetLDAPEntry(ctx, app.LDAPDN, []string{"member", "uniqueMember", "objectClass"})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get LDAP entry: %w", err)
+		}
+		if entry == nil {
+			return nil, fmt.Errorf("application not found in LDAP")
+		}
+		var memberList []string
+		if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfUniqueNames") {
+			memberList = entry.GetAttributeValues("uniqueMember")
+		} else if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfNames") {
+			memberList = entry.GetAttributeValues("member")
+		}
+		if !slices.Contains(memberList, user.LDAPDN) {
+			return nil, fmt.Errorf("user not found in application LDAP entry")
+		}
 	}
 
-	entry, err := s.Service.GetLDAPEntry(ctx, app.LDAPDN, []string{"member", "uniqueMember", "objectClass"})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LDAP entry: %w", err)
-	}
-	if entry == nil {
-		return nil, fmt.Errorf("application not found")
-	}
-	var memberList []string
-	if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfUniqueNames") {
-		memberList = entry.GetAttributeValues("uniqueMember")
-	} else if slices.Contains(entry.GetAttributeValues("objectClass"), "groupOfNames") {
-		memberList = entry.GetAttributeValues("member")
-	}
-	if !slices.Contains(memberList, user.LDAPDN) {
-		return nil, fmt.Errorf("user not found in application")
-	}
 	var appAuthorization model.ApplicationAuthorization
 	// If application authorization doesn't exist, create it; otherwise update it
 	db.Session(ctx).Where("user_id = ? AND application_id = ?", user.Sub, app.ResourceID).First(&appAuthorization)
@@ -226,11 +241,11 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 
 // GetUserInfo retrieves user information
 func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID string) (*model.OIDCUserInfo, error) {
-	ldapSession, err := s.Service.GetLDAPSession(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LDAP session: %w", err)
+	// Get application info first to check source
+	var app model.Application
+	if err := db.Session(ctx).Where("resource_id = ?", appID).First(&app).Error; err != nil {
+		return nil, fmt.Errorf("failed to get application: %w", err)
 	}
-	defer ldapSession.Close()
 
 	var user model.User
 	query := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user.role_id").Model(&model.User{}).
@@ -245,7 +260,20 @@ func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID s
 	if err := query.First(&user).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
+
+	// For LDAP application, user must be LDAP user
+	if app.Source == "ldap" && user.LDAPDN == "" {
+		return nil, fmt.Errorf("LDAP user required for LDAP application")
+	}
+
+	// If user is LDAP user, get LDAP information
 	if user.LDAPDN != "" {
+		ldapSession, err := s.Service.GetLDAPSession(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get LDAP session: %w", err)
+		}
+		defer ldapSession.Close()
+
 		settings, err := s.Service.GetLDAPSettings(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get LDAP settings: %w", err)
@@ -265,12 +293,12 @@ func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID s
 		}
 
 		if len(result.Entries) == 0 {
-			return nil, fmt.Errorf("user not found")
+			return nil, fmt.Errorf("user not found in LDAP")
 		}
 		user.Email = result.Entries[0].GetAttributeValue(settings.EmailAttr)
 		user.FullName = result.Entries[0].GetAttributeValue(settings.DisplayNameAttr)
-
 	}
+
 	return &model.OIDCUserInfo{
 		Sub:               user.ResourceID,
 		Name:              user.FullName,

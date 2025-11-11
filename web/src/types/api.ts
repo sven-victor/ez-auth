@@ -88,8 +88,10 @@ namespace API {
     bind_password: string;
     base_dn: string;
     user_filter: string;
+    application_ldap_enabled: boolean;
     application_filter: string;
     application_base_dn: string;
+    application_object_class: string;
     user_attr: string;
     email_attr: string;
     display_name_attr: string;
@@ -153,6 +155,7 @@ namespace API {
     description: string;
     description_i18n: Record<string, string>;
     status: 'active' | 'inactive';
+    source: 'ldap' | 'local';
     grant_types: string[];
     uri: string;
     redirect_uris: string[];
@@ -198,6 +201,7 @@ namespace API {
     grant_types?: string[];
     scopes?: string[];
     status: 'active' | 'inactive';
+    source?: 'ldap' | 'local';
     icon?: string;
     i18n?: {
       display_name?: Record<string, any>;
@@ -206,6 +210,7 @@ namespace API {
     force_independent_password?: boolean;
   } | {
     ldap_attrs?: LDAPAttrs[];
+    source?: 'ldap' | 'local';
   }
 
   export type ApplicationUpdateRequest = {

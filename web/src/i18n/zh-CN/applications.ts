@@ -49,6 +49,10 @@ export default {
   redirectUrisRequired: '请输入有效的重定向URI',
   grantTypesRequired: '请选择授权类型',
   statusRequired: '请选择状态',
+  source: '数据源',
+  sourceRequired: '请选择数据源',
+  sourceLocal: '本地',
+  sourceLdap: 'LDAP',
   displayName: '显示名称',
   displayNamePlaceholder: '请输入应用显示名称',
   grantType: {

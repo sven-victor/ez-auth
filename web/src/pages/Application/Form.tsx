@@ -34,6 +34,7 @@ interface ApplicationFormValues {
   description?: string;
   description_i18n?: Record<string, string>;
   status: 'active' | 'inactive';
+  source?: 'ldap' | 'local';
   grant_types?: string[];
   redirect_uris?: string[];
   scopes?: string[];
@@ -54,7 +55,7 @@ const ApplicationForm: React.FC = () => {
 
   const [uri, setUri] = useState<string>('');
   const [ldapAttrs, setLDAPAttrs] = useState<API.LDAPAttrs[]>([]);
-
+  const [source, setSource] = useState<'ldap' | 'local'>('local');
   const [viewMode, setViewMode] = useState<'normal' | 'code'>('normal');
   const [grantTypes, setGrantTypes] = useState<string[]>([]);
 
@@ -69,6 +70,7 @@ const ApplicationForm: React.FC = () => {
     onSuccess: (data) => {
       if (data) {
         setGrantTypes(data.grant_types || []);
+        setSource(data.source || 'local');
         form.setFieldsValue({
           name: data.name,
           display_name: data.display_name,
@@ -76,6 +78,7 @@ const ApplicationForm: React.FC = () => {
           description: data.description,
           description_i18n: data.description_i18n,
           status: data.status,
+          source: data.source || 'local',
           grant_types: data.grant_types,
           redirect_uris: data.redirect_uris,
           scopes: data.scopes,
@@ -126,6 +129,7 @@ const ApplicationForm: React.FC = () => {
       description: values.description,
       description_i18n: values.description_i18n,
       status: values.status,
+      source: values.source,
       grant_types: values.grant_types,
       uri: values.uri,
       redirect_uris: values.redirect_uris,
@@ -136,7 +140,7 @@ const ApplicationForm: React.FC = () => {
   }
 
   const onCodeSubmit = ({ ldap_attrs, }: Required<Pick<ApplicationFormValues, 'ldap_attrs'>>) => {
-    onSubmit({ ldap_attrs: toLDAPAttrs(ldap_attrs) })
+    onSubmit({ ldap_attrs: toLDAPAttrs(ldap_attrs), source: 'ldap' })
   }
 
   return (
@@ -144,10 +148,12 @@ const ApplicationForm: React.FC = () => {
       title={isEditMode ? t('editTitle', { defaultValue: 'Edit Application' }) : t('createTitle', { defaultValue: 'Create Application' })}
       loading={applicationLoading}
       extra={<Space>
-        <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
-          <Radio.Button value="normal"><UnorderedListOutlined /></Radio.Button>
-          <Radio.Button value="code"><CodeOutlined /></Radio.Button>
-        </Radio.Group>
+        {((!isEditMode && source === 'ldap') || (isEditMode && source === 'ldap')) && (
+          <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
+            <Radio.Button value="normal"><UnorderedListOutlined /></Radio.Button>
+            <Radio.Button value="code"><CodeOutlined /></Radio.Button>
+          </Radio.Group>
+        )}
       </Space>}
     >
       <Form<ApplicationFormValues>
@@ -169,6 +175,7 @@ const ApplicationForm: React.FC = () => {
           name: '',
           description: '',
           status: 'active',
+          source: 'local',
           grant_types: [],
           redirect_uris: [],
           scopes: [],
@@ -180,6 +187,25 @@ const ApplicationForm: React.FC = () => {
         >
           <AvatarUpload />
         </Form.Item>
+        {!isEditMode && (
+          <Form.Item
+            name="source"
+            label={t('source', { defaultValue: 'Data Source' })}
+            rules={[{ required: true, message: t('sourceRequired', { defaultValue: 'Data source is required' }) }]}
+          >
+            <Radio.Group onChange={(e) => setSource(e.target.value)}>
+              <Radio value="local">{t('sourceLocal', { defaultValue: 'Local' })}</Radio>
+              <Radio value="ldap">{t('sourceLdap', { defaultValue: 'LDAP' })}</Radio>
+            </Radio.Group>
+          </Form.Item>
+        )}
+        {isEditMode && (
+          <Form.Item
+            label={t('source', { defaultValue: 'Data Source' })}
+          >
+            <span>{source === 'ldap' ? t('sourceLdap', { defaultValue: 'LDAP' }) : t('sourceLocal', { defaultValue: 'Local' })}</span>
+          </Form.Item>
+        )}
         <Form.Item
           name="name"
           label={t('name', { defaultValue: 'Name' })}
@@ -323,7 +349,7 @@ const ApplicationForm: React.FC = () => {
           </Space>
         </Form.Item>
       </Form>
-      <Card hidden={viewMode === 'normal'} variant='borderless'>
+      <Card hidden={viewMode === 'normal' || source === 'local'} variant='borderless'>
         <Row >
           <Col sm={{ span: 24 }} md={{ span: 24 }} lg={{ span: 24 }} xl={{ span: 11 }}>
             <Form

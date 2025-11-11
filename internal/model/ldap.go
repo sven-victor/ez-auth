@@ -6,6 +6,7 @@ import (
 )
 
 type LDAPApplicationSettings struct {
+	ApplicationLDAPEnabled bool   `json:"application_ldap_enabled"`
 	ApplicationBaseDN      string `json:"application_base_dn"`
 	ApplicationFilter      string `json:"application_filter"`
 	ApplicationObjectClass string `json:"application_object_class"`
@@ -17,12 +18,14 @@ type LDAPSettings struct {
 }
 
 const (
+	SettingLDAPApplicationLDAPEnabled = "ldap_application_ldap_enabled"
 	SettingLDAPApplicationBaseDN      = "ldap_application_base_dn"
 	SettingLDAPApplicationFilter      = "ldap_application_filter"
 	SettingLDAPApplicationObjectClass = "ldap_application_object_class"
 )
 
 var LDAPApplicationSettingKeys = []model.SettingKey{
+	SettingLDAPApplicationLDAPEnabled,
 	SettingLDAPApplicationBaseDN,
 	SettingLDAPApplicationFilter,
 	SettingLDAPApplicationObjectClass,

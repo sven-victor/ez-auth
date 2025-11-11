@@ -2,7 +2,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from './client';
 import type { UserCreateRequest, UserUpdateRequest, UserListResponse } from '@/types/user';
 
 // Get user list
-export const getUsers = async (keywords?: string, status?: string, current?: number, pageSize?: number, source: string = 'ldap'): Promise<UserListResponse> => {
+export const getUsers = async (source?: string, keywords?: string, status?: string, current?: number, pageSize?: number): Promise<UserListResponse> => {
   return apiGet<UserListResponse>('/users', {
     params: { keywords, status, current, page_size: pageSize, source },
   });
