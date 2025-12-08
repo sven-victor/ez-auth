@@ -251,29 +251,29 @@ func (c *OIDCController) Authorize(ctx *gin.Context) {
 
 				state := ctx.Query("state")
 				if state == "" {
-					return util.NewError("E4001", "state is required")
+					return util.NewErrorMessage("E4001", "state is required")
 				}
 				randomCode := util.GenerateRandomString(20)
 				_, err := c.svc.CreateCache(ctx, fmt.Sprintf("ez-auth:oidc:code:%s", randomCode), w.JSONStringer(oidcUserInfo).String(), time.Now().Add(time.Minute*10))
 				if err != nil {
-					return util.NewError("E5001", "failed to create cache", err)
+					return util.NewErrorMessage("E5001", "failed to create cache", err)
 				}
 				redirectURIQuery.Add("code", randomCode)
 				redirectURIQuery.Add("state", state)
 			case "token":
 				accessToken, err := c.createAccessToken(ctx, clientID, alg, oidcUser)
 				if err != nil {
-					return util.NewError("E5001", "failed to create access token", err)
+					return util.NewErrorMessage("E5001", "failed to create access token", err)
 				}
 				redirectURIQuery.Add("access_token", accessToken)
 			case "id_token":
 				idToken, err := c.createIDToken(ctx, clientID, app.ResourceID, alg, oidcUserInfo)
 				if err != nil {
-					return util.NewError("E5001", "failed to create id token", err)
+					return util.NewErrorMessage("E5001", "failed to create id token", err)
 				}
 				redirectURIQuery.Add("id_token", idToken)
 			default:
-				return util.NewError("E4001", fmt.Sprintf("unsupported response type: %s(%s)", rt, responseType))
+				return util.NewErrorMessage("E4001", fmt.Sprintf("unsupported response type: %s(%s)", rt, responseType))
 			}
 		}
 		redirectURIQuery.Set("grant_type", "authorization_code")
@@ -351,11 +351,11 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 	}
 
 	if tokenRequest.ClientID == "" {
-		util.RespondWithError(ctx, util.NewError("E4001", "client_id is required"))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "client_id is required"))
 		return
 	}
 	if tokenRequest.ClientSecret == "" {
-		util.RespondWithError(ctx, util.NewError("E4001", "client_secret is required"))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "client_secret is required"))
 		return
 	}
 
@@ -366,7 +366,7 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 	// validate client
 	appKey, err := c.svc.ValidateClient(ctx, tokenRequest.ClientID, tokenRequest.ClientSecret)
 	if err != nil {
-		util.RespondWithError(ctx, util.NewError("E4001", "invalid client credentials", err))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid client credentials", err))
 		return
 	}
 
@@ -374,19 +374,19 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 	switch tokenRequest.GrantType {
 	case "authorization_code":
 		if len(tokenRequest.Code) == 0 {
-			util.RespondWithError(ctx, util.NewError("E4001", "code is required"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "code is required"))
 			return
 		}
 		cacheValue, err := c.svc.GetCache(ctx, fmt.Sprintf("ez-auth:oidc:code:%s", tokenRequest.Code))
 		if err != nil || cacheValue == nil {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid code", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid code", err))
 			return
 		}
 		defer c.svc.DeleteCache(ctx, fmt.Sprintf("ez-auth:oidc:code:%s", tokenRequest.Code))
 		var oidcUserInfo model.OIDCUserInfo
 		err = json.Unmarshal([]byte(cacheValue.Value), &oidcUserInfo)
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid code", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid code", err))
 			return
 		}
 		switch oidcUserInfo.CodeChallengeMethod {
@@ -395,28 +395,28 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 			codeChallenge := base64.RawURLEncoding.EncodeToString(verifierHash[:])
 			if codeChallenge != oidcUserInfo.CodeChallenge {
 				level.Error(logger).Log("msg", "invalid code verifier", "err", fmt.Sprintf("%s!=%s", codeChallenge, oidcUserInfo.CodeChallenge), "code_verifier", tokenRequest.CodeVerifier, "code_challenge_method", oidcUserInfo.CodeChallengeMethod)
-				util.RespondWithError(ctx, util.NewError("E4001", "invalid code verifier"))
+				util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid code verifier"))
 				return
 			}
 		case "plain", "":
 			if oidcUserInfo.CodeChallenge != "" && tokenRequest.CodeVerifier != oidcUserInfo.CodeChallenge {
 				level.Error(logger).Log("msg", "invalid code verifier", "code_challenge", oidcUserInfo.CodeChallenge, "code_verifier", tokenRequest.CodeVerifier)
-				util.RespondWithError(ctx, util.NewError("E4001", "invalid code verifier"))
+				util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid code verifier"))
 				return
 			}
 		default:
-			util.RespondWithError(ctx, util.NewError("E4001", "unsupported code challenge method"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "unsupported code challenge method"))
 			return
 		}
 		oidcUserInfo.ApplicationID = appKey.ApplicationID
 		accessToken, err := c.createAccessToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo)
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E5001", "failed to create access token", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to create access token", err))
 			return
 		}
 		idToken, err := c.createIDToken(ctx, tokenRequest.ClientID, appKey.ApplicationID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo.GetByScope(strings.Split(tokenRequest.Scope, " ")))
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E5001", "failed to create id token", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to create id token", err))
 			return
 		}
 		resp := map[string]any{
@@ -428,7 +428,7 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 		if slices.Contains(oidcUserInfo.GrantTypes, string(model.ApplicationGrantTypeRefreshToken)) {
 			resp["refresh_token"], err = c.createRefreshToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, oidcUserInfo)
 			if err != nil {
-				util.RespondWithError(ctx, util.NewError("E5001", "failed to create refresh token", err))
+				util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to create refresh token", err))
 				return
 			}
 		}
@@ -437,14 +437,14 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 	case "refresh_token":
 		refreshToken := tokenRequest.RefreshToken
 		if len(refreshToken) == 0 {
-			util.RespondWithError(ctx, util.NewError("E4001", "refresh token is required"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "refresh token is required"))
 			return
 		}
 
 		// validate refresh token
 		accessToken, err := c.refreshToken(ctx, refreshToken, tokenRequest.ClientID)
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid refresh token", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid refresh token", err))
 			return
 		}
 
@@ -456,30 +456,30 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 		return
 	case "password":
 		if len(tokenRequest.Username) == 0 {
-			util.RespondWithError(ctx, util.NewError("E4001", "username is required"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "username is required"))
 			return
 		}
 		if len(tokenRequest.Password) == 0 {
-			util.RespondWithError(ctx, util.NewError("E4001", "password is required"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "password is required"))
 			return
 		}
 		oidcUserInfo, err := c.svc.VerifyApplicationPassword(ctx, appKey.ApplicationID, tokenRequest.Username, tokenRequest.Password)
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid username or password", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid username or password", err))
 			return
 		}
 		if oidcUserInfo == nil {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid user"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid user"))
 			return
 		}
 		oidcUserInfo.Aud = []string{appKey.ClientID}
 		if !slices.Contains(oidcUserInfo.GrantTypes, string(model.ApplicationGrantTypePassword)) {
-			util.RespondWithError(ctx, util.NewError("E4001", "invalid grant type"))
+			util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid grant type"))
 			return
 		}
 		accessToken, err := c.createAccessToken(ctx, tokenRequest.ClientID, tokenRequest.IDTokenSignedResponseAlg, *oidcUserInfo)
 		if err != nil {
-			util.RespondWithError(ctx, util.NewError("E5001", "failed to create access token", err))
+			util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to create access token", err))
 			return
 		}
 		ctx.JSON(http.StatusOK, map[string]any{
@@ -489,7 +489,7 @@ func (c *OIDCController) Token(ctx *gin.Context) {
 		})
 
 	default:
-		util.RespondWithError(ctx, util.NewError("E4001", "unsupported grant type"))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "unsupported grant type"))
 		return
 	}
 }
@@ -518,18 +518,18 @@ func (c *OIDCController) UserInfo(ctx *gin.Context) {
 	}
 	oidcUserInfo, err := c.verifyAccessToken(ctx, accessToken)
 	if err != nil {
-		util.RespondWithError(ctx, util.NewError("E4001", "invalid access token", err))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid access token", err))
 		return
 	}
 	if len(oidcUserInfo.Aud) == 0 || oidcUserInfo.Aud[0] == "" {
-		util.RespondWithError(ctx, util.NewError("E4001", "invalid access token, audience is empty"))
+		util.RespondWithError(ctx, util.NewErrorMessage("E4001", "invalid access token, audience is empty"))
 		return
 	}
 
 	// get user info
 	userInfo, err := c.svc.GetUserInfo(ctx, oidcUserInfo.SessionID, oidcUserInfo.ApplicationID)
 	if err != nil {
-		util.RespondWithError(ctx, util.NewError("E5001", "failed to get user info", err))
+		util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to get user info", err))
 		return
 	}
 
@@ -547,7 +547,7 @@ func init() {
 func (c *OIDCController) createAccessToken(ctx *gin.Context, clientID string, alg string, oidcUserInfo model.OIDCUserInfo) (string, error) {
 	issuer, err := c.svc.GetJWTIssuer(ctx, oidcUserInfo.ApplicationID, alg, "")
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create id token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create id token", err)
 	}
 	claims := jwt.MapClaims{
 		"exp": time.Now().Add(time.Minute * 10).Unix(),
@@ -561,7 +561,7 @@ func (c *OIDCController) createAccessToken(ctx *gin.Context, clientID string, al
 	}
 	accessToken, err := issuer.SignedString(&claims)
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create access token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create access token", err)
 	}
 	c.svc.CreateCache(ctx, fmt.Sprintf("ez-auth:oidc:access_token:%x", sha256.Sum256([]byte(accessToken))), w.JSONStringer(oidcUserInfo).String(), time.Now().Add(time.Minute*10))
 	return accessToken, nil
@@ -571,7 +571,7 @@ func (c *OIDCController) createRefreshToken(ctx *gin.Context, clientID, alg stri
 
 	issuer, err := c.svc.GetJWTIssuer(ctx, oidcUserInfo.ApplicationID, alg, "")
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create id token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create id token", err)
 	}
 
 	claims := jwt.MapClaims{
@@ -585,7 +585,7 @@ func (c *OIDCController) createRefreshToken(ctx *gin.Context, clientID, alg stri
 	}
 	refreshToken, err := issuer.SignedString(&claims)
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create refresh token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create refresh token", err)
 	}
 	c.svc.CreateCache(ctx, fmt.Sprintf("ez-auth:oidc:refresh_token:%x", sha256.Sum256([]byte(refreshToken))), w.JSONStringer(oidcUserInfo).String(), time.Now().Add(time.Hour*24*7))
 	return refreshToken, nil
@@ -595,19 +595,19 @@ func (c *OIDCController) refreshToken(ctx *gin.Context, refreshToken string, cli
 	token, err := jwt.ParseWithClaims(refreshToken, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		aud, err := token.Claims.GetAudience()
 		if err != nil {
-			return nil, util.NewError("E4001", "invalid refresh token", err)
+			return nil, util.NewErrorMessage("E4001", "invalid refresh token", err)
 		}
 		if len(aud) == 0 || aud[0] != clientID {
-			return nil, util.NewError("E4001", "invalid refresh token")
+			return nil, util.NewErrorMessage("E4001", "invalid refresh token")
 		}
 		appKey, err := c.svc.GetApplicationKey(ctx, clientID)
 		if err != nil {
-			return nil, util.NewError("E5001", "failed to get application key", err)
+			return nil, util.NewErrorMessage("E5001", "failed to get application key", err)
 		}
 		kid, _ := token.Header["kid"].(string)
 		issuer, err := c.svc.GetJWTIssuer(ctx, appKey.ApplicationID, token.Method.Alg(), kid)
 		if err != nil {
-			return nil, util.NewError("E5001", "failed to get jwt issuer", err)
+			return nil, util.NewErrorMessage("E5001", "failed to get jwt issuer", err)
 		}
 		switch token.Method.(type) {
 		case *jwt.SigningMethodRSA, *jwt.SigningMethodECDSA:
@@ -615,43 +615,43 @@ func (c *OIDCController) refreshToken(ctx *gin.Context, refreshToken string, cli
 		case *jwt.SigningMethodHMAC:
 			return issuer.PrivateKey, nil
 		default:
-			return nil, util.NewError("E4001", "invalid access token, unsupported algorithm")
+			return nil, util.NewErrorMessage("E4001", "invalid access token, unsupported algorithm")
 		}
 	})
 	if err != nil {
-		return "", util.NewError("E4001", fmt.Sprintf("invalid refresh token: %s", err), err)
+		return "", util.NewErrorMessage("E4001", fmt.Sprintf("invalid refresh token: %s", err), err)
 	}
 
 	// validate access token is expired
 	exp, err := token.Claims.GetExpirationTime()
 	if err != nil {
-		return "", util.NewError("E4001", "invalid refresh token, failed to get expiration time", err)
+		return "", util.NewErrorMessage("E4001", "invalid refresh token, failed to get expiration time", err)
 	}
 	if exp.Before(time.Now()) {
-		return "", util.NewError("E4001", "refresh token expired")
+		return "", util.NewErrorMessage("E4001", "refresh token expired")
 	}
 
 	// validate access token is used before issued
 	nbf, err := token.Claims.GetNotBefore()
 	if err != nil {
-		return "", util.NewError("E4001", "invalid refresh token, failed to get not before", err)
+		return "", util.NewErrorMessage("E4001", "invalid refresh token, failed to get not before", err)
 	}
 	if nbf != nil && nbf.Before(time.Now()) {
-		return "", util.NewError("E4001", "refresh token used before issued")
+		return "", util.NewErrorMessage("E4001", "refresh token used before issued")
 	}
 
 	cacheValue, err := c.svc.GetCache(ctx, fmt.Sprintf("ez-auth:oidc:refresh_token:%x", sha256.Sum256([]byte(refreshToken))))
 	if err != nil || cacheValue == nil {
-		return "", util.NewError("E4001", "invalid refresh token, failed to get user info", err)
+		return "", util.NewErrorMessage("E4001", "invalid refresh token, failed to get user info", err)
 	}
 	var oidcUserInfo model.OIDCUserInfo
 	err = json.Unmarshal([]byte(cacheValue.Value), &oidcUserInfo)
 	if err != nil {
-		return "", util.NewError("E4001", "invalid refresh token, failed to load oidc user info", err)
+		return "", util.NewErrorMessage("E4001", "invalid refresh token, failed to load oidc user info", err)
 	}
 	accessToken, err := c.createAccessToken(ctx, clientID, token.Method.Alg(), oidcUserInfo)
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create access token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create access token", err)
 	}
 	return accessToken, nil
 }
@@ -660,19 +660,19 @@ func (c *OIDCController) verifyAccessToken(ctx context.Context, accessToken stri
 	token, err := jwt.ParseWithClaims(accessToken, jwt.MapClaims{}, func(token *jwt.Token) (any, error) {
 		aud, err := token.Claims.GetAudience()
 		if err != nil {
-			return nil, util.NewError("E4001", "invalid access token, failed to get audience", err)
+			return nil, util.NewErrorMessage("E4001", "invalid access token, failed to get audience", err)
 		}
 		if len(aud) == 0 || aud[0] == "" {
-			return nil, util.NewError("E4001", "invalid access token, audience is empty")
+			return nil, util.NewErrorMessage("E4001", "invalid access token, audience is empty")
 		}
 		appKey, err := c.svc.GetApplicationKey(ctx, aud[0])
 		if err != nil {
-			return nil, util.NewError("E5001", "failed to get application key", err)
+			return nil, util.NewErrorMessage("E5001", "failed to get application key", err)
 		}
 		kid, _ := token.Header["kid"].(string)
 		issuer, err := c.svc.GetJWTIssuer(ctx, appKey.ApplicationID, token.Method.Alg(), kid)
 		if err != nil {
-			return nil, util.NewError("E5001", "failed to get jwt issuer", err)
+			return nil, util.NewErrorMessage("E5001", "failed to get jwt issuer", err)
 		}
 		switch token.Method.(type) {
 		case *jwt.SigningMethodRSA, *jwt.SigningMethodECDSA:
@@ -680,40 +680,40 @@ func (c *OIDCController) verifyAccessToken(ctx context.Context, accessToken stri
 		case *jwt.SigningMethodHMAC:
 			return issuer.PrivateKey, nil
 		default:
-			return nil, util.NewError("E4001", "invalid access token, unsupported algorithm")
+			return nil, util.NewErrorMessage("E4001", "invalid access token, unsupported algorithm")
 		}
 	})
 	if err != nil {
-		return nil, util.NewError("E4001", fmt.Sprintf("invalid access token: %s", err), err)
+		return nil, util.NewErrorMessage("E4001", fmt.Sprintf("invalid access token: %s", err), err)
 	}
 
 	// validate access token is expired
 	exp, err := token.Claims.GetExpirationTime()
 	if err != nil {
-		return nil, util.NewError("E4001", "invalid access token, failed to get expiration time", err)
+		return nil, util.NewErrorMessage("E4001", "invalid access token, failed to get expiration time", err)
 	}
 	if exp.Before(time.Now()) {
-		return nil, util.NewError("E4001", "access token expired")
+		return nil, util.NewErrorMessage("E4001", "access token expired")
 	}
 
 	// validate access token is used before issued
 	nbf, err := token.Claims.GetNotBefore()
 	if err != nil {
-		return nil, util.NewError("E4001", "invalid access token, failed to get not before", err)
+		return nil, util.NewErrorMessage("E4001", "invalid access token, failed to get not before", err)
 	}
 	if nbf != nil && nbf.Before(time.Now()) {
-		return nil, util.NewError("E4001", "access token used before issued")
+		return nil, util.NewErrorMessage("E4001", "access token used before issued")
 	}
 
 	cacheValue, err := c.svc.GetCache(ctx, fmt.Sprintf("ez-auth:oidc:access_token:%x", sha256.Sum256([]byte(accessToken))))
 	if err != nil || cacheValue == nil {
-		return nil, util.NewError("E4001", "invalid access token, failed to get user info", err)
+		return nil, util.NewErrorMessage("E4001", "invalid access token, failed to get user info", err)
 	}
 
 	var oidcUserInfo model.OIDCUserInfo
 	err = json.Unmarshal([]byte(cacheValue.Value), &oidcUserInfo)
 	if err != nil {
-		return nil, util.NewError("E4001", "invalid access token, failed to load oidc user info", err)
+		return nil, util.NewErrorMessage("E4001", "invalid access token, failed to load oidc user info", err)
 	}
 	return &oidcUserInfo, nil
 }
@@ -725,7 +725,7 @@ func (c *OIDCController) createIDToken(ctx *gin.Context, clientID, appID, alg st
 	delete(jwtClaims, "sid")
 	issuer, err := c.svc.GetJWTIssuer(ctx, appID, alg, "")
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create id token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create id token", err)
 	}
 
 	jwtClaims["iss"] = util.GetRootURL(ctx)
@@ -733,7 +733,7 @@ func (c *OIDCController) createIDToken(ctx *gin.Context, clientID, appID, alg st
 
 	idToken, err := issuer.SignedString(&jwtClaims)
 	if err != nil {
-		return "", util.NewError("E5001", "failed to create id token", err)
+		return "", util.NewErrorMessage("E5001", "failed to create id token", err)
 	}
 	return idToken, nil
 }

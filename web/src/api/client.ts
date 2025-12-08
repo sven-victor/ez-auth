@@ -108,7 +108,7 @@ client.interceptors.response.use(
     if (errorResponse) {
       if (errorResponse.code === "E50039") {
         // LDAP not enabled, goto settings page
-        window.location.href = '/ui/settings/ldap';
+        window.location.href = '/system/settings#ldap';
         return;
       } else if (errorResponse.err) {
         // New format error

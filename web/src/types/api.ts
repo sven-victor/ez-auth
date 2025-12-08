@@ -320,18 +320,5 @@ namespace API {
     icon: string;
     hidden: boolean;
   }
-
-  export interface Navigation {
-    name: string;
-    path: string;
-  }
-  export interface SiteConfig {
-    logo?: string;
-    name?: string;
-    name_i18n: Record<string, string>;
-    home_page?: string;
-    navigation: Navigation[];
-    menu: MenuConfig[];
-  }
 }
 

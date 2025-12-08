@@ -3,7 +3,7 @@ import { Button, Card, Descriptions, Form, Input, List, message, Select, Space, 
 import { Link, useSearchParams } from 'react-router-dom';
 import { getOIDCConfig, exchangeToken, getUserInfo, getJWKS } from '@/api/oidc';
 import { useRequest } from 'ahooks';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import _, { has, isString } from 'lodash';
 import { CheckCircleTwoTone, CloseCircleTwoTone, ExclamationCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 
@@ -683,35 +683,42 @@ const OIDCTestPage: React.FC = () => {
           />
         </Card>
         <Card loading={fetchUserInfoLoading && fetchTokenLoading && refreshTokenLoading} >
-          <Tabs>
-            <Tabs.TabPane tab={t("userInfo", { defaultValue: "User Info" })} key="userInfo" disabled={!userInfo || fetchUserInfoLoading}>
-              {userInfo && (
+          <Tabs
+            items={[{
+              key: "userInfo",
+              label: t("userInfo", { defaultValue: "User Info" }),
+              children: userInfo && (
                 <Descriptions bordered items={Object.entries(userInfo).map(([key, value]) => ({
                   label: key,
                   span: 3,
                   children: value,
                 }))} />
-              )}
-            </Tabs.TabPane>
-            <Tabs.TabPane tab={t("idToken", { defaultValue: "ID Token" })} key="idToken" disabled={!id_token || fetchTokenLoading}>
-              {id_token && (
+              ),
+              disabled: !userInfo || fetchUserInfoLoading,
+            }, {
+              key: "idToken",
+              label: t("idToken", { defaultValue: "ID Token" }),
+              children: id_token && (
                 <Descriptions bordered items={Object.entries(parseJWTPayload(id_token)).map(([key, value]) => ({
                   label: key,
                   span: 3,
                   children: value,
                 }))} />
-              )}
-            </Tabs.TabPane>
-            <Tabs.TabPane tab={t("accessToken", { defaultValue: "Access Token" })} key="accessToken" disabled={!access_token || fetchTokenLoading}>
-              {access_token && (
+              ),
+              disabled: !id_token || fetchTokenLoading,
+            }, {
+              key: "accessToken",
+              label: t("accessToken", { defaultValue: "Access Token" }),
+              children: access_token && (
                 <Descriptions bordered items={Object.entries(parseJWTPayload(access_token)).map(([key, value]) => ({
                   label: key,
                   span: 3,
                   children: value,
                 }))} />
-              )}
-            </Tabs.TabPane>
-          </Tabs>
+              ),
+              disabled: !access_token || fetchTokenLoading,
+            }]}
+          />
         </Card>
       </Space>
     </div>

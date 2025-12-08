@@ -1,6 +1,5 @@
-import i18n from "@/i18n";
+import { i18n, AllLangUIConfig } from "ez-console";
 import { Tabs, Input, Form } from "antd";
-import { AllLangUIConfig } from "./LanguageSwitch";
 import { createStyles } from 'antd-style';
 
 const useStyles = createStyles(({ css }) => {
@@ -30,20 +29,25 @@ export const I18nFormItem: React.FC<I18nFormItemProps> = ({
   }
 }) => {
   const { styles } = useStyles();
-  return <Tabs className={styles.i18nFormItem} tabBarStyle={{ marginBottom: '0 0 8px 0' }}>
-    <Tabs.TabPane tab={t(`default`, { defaultValue: 'Default' })} key="default" forceRender={true}>
-      <Form.Item name={name} style={{ marginBottom: 0 }}>
+  return <Tabs
+    className={styles.i18nFormItem} tabBarStyle={{ marginBottom: '0 0 8px 0' }}
+    items={[{
+      key: "default",
+      label: t(`default`, { defaultValue: 'Default' }),
+      children: <Form.Item name={name} style={{ marginBottom: 0 }}>
         {childRender({ lang: "default", label: t(`default`, { defaultValue: 'Default' }) })}
-      </Form.Item>
-    </Tabs.TabPane>
-    {AllLangUIConfig.map(item => (
-      <Tabs.TabPane tab={i18n.language !== item.lang ? t(`${item.lang}`, { defaultValue: item.label, lang: item.label }) : item.label} key={item.lang} forceRender={true}>
-        <Form.Item name={[i18nName, item.lang]} style={{ marginBottom: 0 }}>
-          {childRender(item)}
-        </Form.Item>
-      </Tabs.TabPane>
-    ))}
-  </Tabs>
+      </Form.Item>,
+      forceRender: true,
+    }, ...AllLangUIConfig.map(item => ({
+      key: item.lang,
+      label: i18n.language !== item.lang ? t(`${item.lang}`, { defaultValue: item.label, lang: item.label }) : item.label,
+      children: <Form.Item name={[i18nName, item.lang]} style={{ marginBottom: 0 }}>
+        {childRender(item)}
+      </Form.Item>,
+      forceRender: true,
+    }))]
+    }
+  />
 
 };
 

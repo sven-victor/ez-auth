@@ -27,14 +27,11 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getUser, getUserApplications, resetUserPassword } from '@/api/user';
 import { formatDate, getApplicationDescription, getApplicationDisplayName } from '@/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { useRequest } from 'ahooks';
-import i18n from '@/i18n';
 import AssignUserModel from './components/AssignUserModel';
 import { Table, TableRef } from '@/components/Table';
-import Avatar from '@/components/Avatar';
-import NotFound from '../NotFound';
-import { PermissionGuard } from '@/components/PermissionGuard';
+import { Avatar, NotFound, PermissionGuard, i18n } from 'ez-console';
 import { removeUserFromApplication } from '@/api/application';
 
 const { Title } = Typography;
@@ -76,7 +73,7 @@ const UserDetail: React.FC = () => {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <Title level={4}>{t('notFound', { defaultValue: 'User not found' })}</Title>
-        <Button type="primary" onClick={() => navigate('/users')}>
+        <Button type="primary" onClick={() => navigate('/authorization/users')}>
           {t('backToList', { defaultValue: 'Back to List' })}
         </Button>
       </div>
@@ -275,7 +272,7 @@ const UserDetail: React.FC = () => {
         <Space>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/users')}
+            onClick={() => navigate('/authorization/users')}
           >
             {tCommon('back', { defaultValue: 'Back' })}
           </Button>
@@ -283,7 +280,7 @@ const UserDetail: React.FC = () => {
             <Button
               type="primary"
               icon={<EditOutlined />}
-              onClick={() => navigate(`/users/${id}/edit`)}
+              onClick={() => navigate(`/authorization/users/${id}/edit`)}
             >
               {tCommon('edit', { defaultValue: 'Edit' })}
             </Button>

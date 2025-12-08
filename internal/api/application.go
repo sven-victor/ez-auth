@@ -93,14 +93,7 @@ func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 		})
 		return
 	}
-
-	ctx.JSON(http.StatusOK, util.PaginationResponse{
-		Code:     "0",
-		Data:     apps,
-		Total:    total,
-		Current:  page,
-		PageSize: pageSize,
-	})
+	util.RespondWithSuccessList(ctx, http.StatusOK, apps, total, page, pageSize)
 }
 
 // CreateApplication creates a new application.
@@ -275,7 +268,7 @@ func (c *ApplicationController) DeleteApplication(ctx *gin.Context) {
 		return
 	}
 
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 // CreateApplicationRole creates a new role for an application.
@@ -311,7 +304,7 @@ func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		util.RespondWithError(ctx, util.NewError("E5001", "failed to create application role", err))
+		util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to create application role", err))
 		return
 	}
 }
@@ -353,11 +346,11 @@ func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 		}); err != nil {
 			return err
 		}
-		util.RespondWithSuccess(ctx, http.StatusOK, nil)
+		util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 		return nil
 	})
 	if err != nil {
-		util.RespondWithError(ctx, util.NewError("E5001", "failed to update application role", err))
+		util.RespondWithError(ctx, util.NewErrorMessage("E5001", "failed to update application role", err))
 		return
 	}
 }
@@ -411,7 +404,7 @@ func (c *ApplicationController) DeleteApplicationRole(ctx *gin.Context) {
 		return
 	}
 
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 type AssignUserRoleRequest struct {
@@ -451,7 +444,7 @@ func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
 		return
 	}
 
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 // UnassignUserRole unassigns a role from a user for an application.
@@ -479,7 +472,7 @@ func (c *ApplicationController) UnassignUserRole(ctx *gin.Context) {
 		return
 	}
 
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 // ListApplicationUsers retrieves all users for an application.
@@ -548,10 +541,7 @@ func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 			})
 			return
 		}
-		ctx.JSON(http.StatusOK, util.Response{
-			Code: "0",
-			Data: applications,
-		})
+		util.RespondWithSuccess(ctx, http.StatusOK, applications)
 	} else {
 		err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
 			auditLog.ActionName = "Import LDAP Applications"
@@ -563,10 +553,7 @@ func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 					Err:      err,
 				})
 			}
-			ctx.JSON(http.StatusOK, util.Response{
-				Code: "0",
-				Data: applications,
-			})
+			util.RespondWithSuccess(ctx, http.StatusOK, applications)
 			return nil
 		})
 		if err != nil {
@@ -678,7 +665,7 @@ func (c *ApplicationController) DeleteApplicationKey(ctx *gin.Context) {
 		})
 		return
 	}
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 type CreateApplicationIssuerKeyRequest struct {
@@ -776,7 +763,7 @@ func (c *ApplicationController) DeleteApplicationIssuerKey(ctx *gin.Context) {
 		})
 		return
 	}
-	util.RespondWithSuccess(ctx, http.StatusOK, nil)
+	util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 }
 
 type UpdateApplicationPasswordRequest struct {
@@ -815,7 +802,7 @@ func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
 		if err != nil {
 			return err
 		}
-		util.RespondWithSuccess(ctx, http.StatusOK, nil)
+		util.RespondWithSuccess[any](ctx, http.StatusOK, nil)
 		return nil
 	})
 	if err != nil {

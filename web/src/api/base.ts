@@ -10,11 +10,6 @@ export const logout = async (): Promise<void> => {
   return apiPost<void>(`/authorization/auth/logout`);
 };
 
-// Get navigation bar
-export const getNavigation = async (): Promise<API.Navigation[]> => {
-  return apiGet<API.Navigation[]>(`/system/navigation`);
-};
-
 // Upload file
 export const uploadFile = async (file: File, fileType: string, access: 'private' | 'public' | 'owner' = 'private'): Promise<API.File[]> => {
   const formData = new FormData();

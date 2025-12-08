@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Input, Switch, Button, message, Modal, Spin, Steps, Skeleton, Descriptions, Divider, Tag, Table, Select } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { getLDAPSettings, updateLDAPSettings, testLDAPConnection, importLDAPUsers, importLDAPApplications } from '@/api/system';
 import { useRequest } from 'ahooks';
-import { PermissionGuard } from '@/components/PermissionGuard';
+import { PermissionGuard } from 'ez-console';
 import { CheckCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 import { ColumnType } from 'antd/es/table';
 

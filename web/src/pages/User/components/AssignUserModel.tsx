@@ -1,6 +1,6 @@
 import { assignUserToApplication } from "@/api/application";
 import { getApplicationRoles } from "@/api/application";
-import Avatar from "@/components/Avatar";
+import { Avatar } from "ez-console";
 import { AppstoreOutlined, CheckCircleFilled, CloseCircleFilled, CloseOutlined, LoadingOutlined } from "@ant-design/icons";
 import { useRequest } from "ahooks";
 import { Modal, Form, message, Select, Spin, List, Button, Popover } from "antd";

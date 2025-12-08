@@ -1,6 +1,4 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { i18n } from 'ez-console';
 
 import enUS from './en-US';
 import enUSApplications from './en-US/applications';
@@ -52,77 +50,45 @@ import zhCNSystem from './zh-CN/system';
 import zhCNCommon from './zh-CN/common';
 import zhCNoidc from './zh-CN/oidc';
 
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    ns: ['applications', 'users', 'system', 'common', 'oidc'],
-    defaultNS: 'translation',
-
-    resources: {
-      'en-US': {
-        translation: enUS,
-        applications: enUSApplications,
-        users: enUSUsers,
-        system: enUSSystem,
-        common: enUSCommon,
-        oidc: enUSoidc,
-      },
-      'ar-AE': {
-        translation: arAE,
-        applications: arAEApplications,
-        users: arAEUsers,
-        system: arAESystem,
-        common: arAECommon,
-        oidc: arAEoidc,
-      },
-      'de-DE': {
-        translation: deDE,
-        applications: deDEApplications,
-        users: deDEUsers,
-        system: deDESystem,
-        common: deDECommon,
-        oidc: deDEoidc,
-      },
-      'es-ES': {
-        translation: esES,
-        applications: esESApplications,
-        users: esESUsers,
-        system: esESSystem,
-        common: esESCommon,
-        oidc: esESoidc,
-      },
-      'fr-FR': {
-        translation: frFR,
-        applications: frFRApplications,
-        users: frFRUsers,
-        system: frESSystem,
-        common: frESCommon,
-        oidc: frESoidc,
-      },
-      'sv-SE': {
-        translation: svSE,
-        applications: svSEApplications,
-        users: svSEUsers,
-        system: svESSystem,
-        common: svESCommon,
-        oidc: svESoidc,
-      },
-      'zh-CN': {
-        translation: zhCN,
-        applications: zhCNApplications,
-        users: zhCNUsers,
-        system: zhCNSystem,
-        common: zhCNCommon,
-        oidc: zhCNoidc,
-      },
-    },
-    fallbackLng: 'en-US',
-    debug: process.env.NODE_ENV === 'development',
-    interpolation: {
-      escapeValue: false,
-    },
-  });
-
-
-export default i18n; 
+i18n.addResourceBundle('en-US', 'translation', enUS, true,).
+  addResourceBundle('ar-AE', 'translation', arAE, true,).
+  addResourceBundle('de-DE', 'translation', deDE, true,).
+  addResourceBundle('es-ES', 'translation', esES, true,).
+  addResourceBundle('fr-FR', 'translation', frFR, true,).
+  addResourceBundle('sv-SE', 'translation', svSE, true,).
+  addResourceBundle('zh-CN', 'translation', zhCN, true,).
+  addResourceBundle('en-US', 'applications', enUSApplications, true,).
+  addResourceBundle('ar-AE', 'applications', arAEApplications, true,).
+  addResourceBundle('de-DE', 'applications', deDEApplications, true,).
+  addResourceBundle('es-ES', 'applications', esESApplications, true,).
+  addResourceBundle('fr-FR', 'applications', frFRApplications, true,).
+  addResourceBundle('sv-SE', 'applications', svSEApplications, true,).
+  addResourceBundle('zh-CN', 'applications', zhCNApplications, true,).
+  addResourceBundle('en-US', 'users', enUSUsers, true,).
+  addResourceBundle('ar-AE', 'users', arAEUsers, true,).
+  addResourceBundle('de-DE', 'users', deDEUsers, true,).
+  addResourceBundle('es-ES', 'users', esESUsers, true,).
+  addResourceBundle('fr-FR', 'users', frFRUsers, true,).
+  addResourceBundle('sv-SE', 'users', svSEUsers, true,).
+  addResourceBundle('zh-CN', 'users', zhCNUsers, true,).
+  addResourceBundle('en-US', 'system', enUSSystem, true,).
+  addResourceBundle('ar-AE', 'system', arAESystem, true,).
+  addResourceBundle('de-DE', 'system', deDESystem, true,).
+  addResourceBundle('es-ES', 'system', esESSystem, true,).
+  addResourceBundle('fr-FR', 'system', frESSystem, true,).
+  addResourceBundle('sv-SE', 'system', svESSystem, true,).
+  addResourceBundle('zh-CN', 'system', zhCNSystem, true,).
+  addResourceBundle('en-US', 'common', enUSCommon, true,).
+  addResourceBundle('ar-AE', 'common', arAECommon, true,).
+  addResourceBundle('de-DE', 'common', deDECommon, true,).
+  addResourceBundle('es-ES', 'common', esESCommon, true,).
+  addResourceBundle('fr-FR', 'common', frESCommon, true,).
+  addResourceBundle('sv-SE', 'common', svESCommon, true,).
+  addResourceBundle('zh-CN', 'common', zhCNCommon, true,).
+  addResourceBundle('en-US', 'oidc', enUSoidc, true,).
+  addResourceBundle('ar-AE', 'oidc', arAEoidc, true,).
+  addResourceBundle('de-DE', 'oidc', deDEoidc, true,).
+  addResourceBundle('es-ES', 'oidc', esESoidc, true,).
+  addResourceBundle('fr-FR', 'oidc', frESoidc, true,).
+  addResourceBundle('sv-SE', 'oidc', svESoidc, true,).
+  addResourceBundle('zh-CN', 'oidc', zhCNoidc, true,);

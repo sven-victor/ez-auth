@@ -1,23 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Form, Input, Layout, List, message, Modal, Pagination, Radio, Space, Tag, Tooltip, Typography } from 'antd';
-import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
+import { useAuth, Avatar, HeaderDropdown, LanguageSwitch, Loading, PermissionGuard, Actions, useSite, type SiteConfig } from 'ez-console';
+import { useTranslation } from 'ez-console';
 import { useRequest } from 'ahooks';
 import { getMySelfApplications } from '@/api/user';
 import { updateApplicationPassword } from '@/api/application';
 import { getApplicationDescription, getApplicationDisplayName } from '@/utils';
-import Avatar from '@/components/Avatar';
 import { AppstoreOutlined, KeyOutlined, ProductOutlined, ReloadOutlined, SearchOutlined, SwapOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
-import HeaderDropdown from '@/components/HeaderDropdown';
-import LanguageSwitch from '@/components/LanguageSwitch';
 import { Content, Header } from 'antd/es/layout/layout';
-import { getSiteConfig } from '@/api/system';
-import Loading from '@/components/Loading';
-import { PermissionGuard } from '@/components/PermissionGuard';
 import { Link } from 'react-router-dom';
 
 import { createStyles } from 'antd-style';
-import Actions from '@/components/Actions';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -42,6 +35,7 @@ const { Paragraph, Text, Title } = Typography;
 
 
 const Home: React.FC = () => {
+  const { siteConfig } = useSite();
   const { styles } = useStyles();
   const { t, i18n } = useTranslation();
   const { t: tCommon } = useTranslation('common');
@@ -53,7 +47,6 @@ const Home: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [listType, setListType] = useState<'card' | 'list'>('card');
 
-  const [siteConfig, setSiteConfig] = useState<API.SiteConfig | null>(null);
   if (user) {
     if (user.mfa_enforced && !user.mfa_enabled) {
       window.location.href = '/console/profile#mfa';
@@ -67,24 +60,16 @@ const Home: React.FC = () => {
     return
   }
   useEffect(() => {
-    getSiteConfig().then((siteConfig) => {
-      const navigation = siteConfig.navigation.filter(item => item.path !== siteConfig.home_page)
-      const newNavigation = [...(siteConfig.home_page ? [{
-        name: 'home',
-        path: siteConfig.home_page,
-      }, {
-        name: 'user_management',
-        path: '/ui/users',
-      }] : []), ...navigation]
-      if (newNavigation.length > 1) {
-        setNavigation(newNavigation.filter(item => item.path !== window.location.pathname))
+    if (siteConfig) {
+      const navigation = (siteConfig as SiteConfig).navigation.filter(item => item.path !== siteConfig.home_page)
+      if (navigation.length > 1) {
+        setNavigation(navigation.filter(item => item.path !== window.location.pathname))
       } else {
         setNavigation([])
       }
-      setSiteConfig(siteConfig)
-      document.getElementById('site-icon')?.setAttribute('href', siteConfig.logo || '/ui/logo.png')
-    })
-  }, [])
+      document.getElementById('site-icon')?.setAttribute('href', siteConfig.logo || '/logo.png')
+    }
+  }, [siteConfig])
   useEffect(() => {
     if (i18n.language) {
       window.document.title = (siteConfig?.name_i18n[i18n.language] || siteConfig?.name || "")
@@ -176,8 +161,8 @@ const Home: React.FC = () => {
             icon: <KeyOutlined />,
             hidden: !isPasswordGrant,
             type: 'link',
-            onClick: () => {
-              handleChangePassword(item)
+            onClick: async () => {
+              return await handleChangePassword(item)
             }
           }]} />]}>
             <List.Item.Meta
@@ -216,7 +201,7 @@ const Home: React.FC = () => {
   return <Layout style={{ minHeight: '100vh' }} className="site-layout">
     <Header className="site-layout-background" style={{ padding: 0, display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }} >
-        <Avatar src={siteConfig?.logo || '/ui/logo.png'} />
+        <Avatar src={siteConfig?.logo || '/logo.png'} />
         <div style={{ marginLeft: '10px' }}>
           <Title style={{ fontSize: 16 }}>{siteConfig?.name}</Title>
         </div>
@@ -228,7 +213,7 @@ const Home: React.FC = () => {
           </Link>
         </PermissionGuard>
         <HeaderDropdown
-          hidden={!user?.roles}
+          hidden={!user?.roles || navigation.length === 0}
           menu={{
             items: navigation.map(item => ({
               key: item.path,

@@ -16,11 +16,11 @@ import {
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUser, updateUser, createUser, getRoles } from '@/api/user';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { useRequest } from 'ahooks';
 import { CodeOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { toLDAPAttrs } from '@/utils';
-import { AvatarUpload } from '@/components/Avatar';
+import { AvatarUpload } from 'ez-console';
 
 const { Option } = Select;
 
@@ -284,7 +284,7 @@ const UserForm: React.FC = () => {
               {isEditMode ? tCommon('update', { defaultValue: 'Update' }) : tCommon('create', { defaultValue: 'Create' })}
             </Button>
             <Button
-              onClick={() => isEditMode ? navigate(`/users/${id}`) : navigate('/users')}
+              onClick={() => isEditMode ? navigate(`/authorization/users/${id}`) : navigate('/authorization/users')}
             >
               {tCommon('cancel', { defaultValue: 'Cancel' })}
             </Button>
@@ -326,7 +326,7 @@ const UserForm: React.FC = () => {
                     {isEditMode ? tCommon('update') : tCommon('create')}
                   </Button>
                   <Button
-                    onClick={() => isEditMode ? navigate(`/users/${id}`) : navigate('/users')}
+                    onClick={() => isEditMode ? navigate(`/authorization/users/${id}`) : navigate('/authorization/users')}
                   >
                     {tCommon('cancel')}
                   </Button>

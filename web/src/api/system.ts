@@ -26,8 +26,3 @@ export const importLDAPUsers = (data: API.ImportLDAPUsersRequest) => {
 export const importLDAPApplications = (data: API.ImportLDAPApplicationsRequest) => {
   return apiPost<API.ImportLDAPApplicationsResponse[]>(`/applications/import`, data);
 };
-
-// Get site config
-export const getSiteConfig = async (): Promise<API.SiteConfig> => {
-  return apiGet<API.SiteConfig>(`/system/site`);
-};

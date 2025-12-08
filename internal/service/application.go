@@ -17,6 +17,7 @@ import (
 	"github.com/sven-victor/ez-auth/internal/model"
 	"github.com/sven-victor/ez-console/pkg/db"
 	consolemodel "github.com/sven-victor/ez-console/pkg/model"
+	consoleservice "github.com/sven-victor/ez-console/pkg/service"
 	"github.com/sven-victor/ez-console/pkg/util"
 	jwtutil "github.com/sven-victor/ez-console/pkg/util/jwt"
 	"github.com/sven-victor/ez-console/server"
@@ -32,6 +33,13 @@ type ApplicationService struct {
 }
 
 func NewApplicationService(svc server.Service) *ApplicationService {
+	consoleservice.RegisterSiteConigAttr("application_ldap_enabled", func(ctx context.Context) any {
+		applicationLDAPEnabled, err := svc.GetBoolSetting(ctx, model.SettingLDAPApplicationLDAPEnabled, false)
+		if err != nil {
+			return fmt.Errorf("failed to get application LDAP enabled setting: %w", err)
+		}
+		return applicationLDAPEnabled
+	})
 	return &ApplicationService{
 		BaseService: BaseService{Service: svc},
 	}
@@ -696,7 +704,7 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 				if errors.As(err, &ldapError) {
 					switch ldapError.ResultCode {
 					case ldap.LDAPResultEntryAlreadyExists:
-						return util.NewError("E50040", "Application already exists in LDAP")
+						return util.NewErrorMessage("E50040", "Application already exists in LDAP")
 					case ldap.LDAPResultNoSuchObject:
 						level.Info(logger).Log("msg", "baseDN may not exist, creating organizational unit", "dn", baseDN)
 						if err := s.RecursiveCreateOrganizationalUnitEntry(ctx, baseDN); err != nil {
@@ -1135,13 +1143,13 @@ func (s *ApplicationService) CreateApplicationIssuerKey(ctx context.Context, app
 	if privateKey == "" {
 		pk, err := jwtutil.NewRandomKey(algorithm)
 		if err != nil {
-			return nil, util.NewError("E40055", "failed to generate random key", err)
+			return nil, util.NewErrorMessage("E40055", "failed to generate random key", err)
 		}
 		privateKey = string(pk)
 	} else {
 		pk, err := model.ParsePrivateKey(privateKey, algorithm)
 		if err != nil {
-			return nil, util.NewError("E40054", "invalid private key", err)
+			return nil, util.NewErrorMessage("E40054", "invalid private key", err)
 		}
 		switch k := pk.(type) {
 		case *rsa.PrivateKey:
@@ -1276,7 +1284,7 @@ func (s *ApplicationService) CheckPasswordComplexity(ctx context.Context, passwo
 
 	// Check password length
 	if len(password) < minLength {
-		return util.NewError("E40050", fmt.Sprintf("password length must be at least %d characters", minLength), nil)
+		return util.NewErrorMessage("E40050", fmt.Sprintf("password length must be at least %d characters", minLength))
 	}
 
 	// Check password complexity
@@ -1287,19 +1295,19 @@ func (s *ApplicationService) CheckPasswordComplexity(ctx context.Context, passwo
 	case consolemodel.PasswordComplexityHigh:
 		// Must contain uppercase, lowercase letters and numbers
 		if !hasUppercase(password) || !hasLowercase(password) || !hasDigit(password) {
-			return util.NewError("E40052", "password must contain uppercase letters, lowercase letters, and numbers", nil)
+			return util.NewErrorMessage("E40052", "password must contain uppercase letters, lowercase letters, and numbers")
 		}
 		return nil
 	case consolemodel.PasswordComplexityVeryHigh:
 		// Must contain uppercase, lowercase letters, numbers and special characters
 		if !hasUppercase(password) || !hasLowercase(password) || !hasDigit(password) || !hasSpecial(password) {
-			return util.NewError("E40053", "password must contain uppercase, lowercase letters, numbers and special characters", nil)
+			return util.NewErrorMessage("E40053", "password must contain uppercase, lowercase letters, numbers and special characters")
 		}
 		return nil
 	default:
 		// Default to medium complexity
 		if !passwordContainsAtLeast(password, 2) {
-			return util.NewError("E40051", "password must contain uppercase letters, lowercase letters, numbers, and special characters", nil)
+			return util.NewErrorMessage("E40051", "password must contain uppercase letters, lowercase letters, numbers, and special characters")
 		}
 		return nil
 	}

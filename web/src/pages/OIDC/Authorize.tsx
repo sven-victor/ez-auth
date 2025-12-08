@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Button, Card, message, Space, Typography, Tag } from 'antd';
 import { useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { getApplicationByClientId, authorizeApplication } from '@/api/oidc';
 import { useRequest } from 'ahooks';
 import { SwapOutlined } from '@ant-design/icons';
-import Avatar from '@/components/Avatar';
+import { Avatar } from 'ez-console';
 import { getApplicationDisplayName } from '@/utils';
 const { Title } = Typography;
 
@@ -110,7 +110,7 @@ const OIDCAuthorize: React.FC = () => {
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Title level={3}>{t('authorize.title', { defaultValue: 'Application Authorization' })}</Title>
           <Space size={"large"} style={{ textAlign: 'center' }}>
-            <Avatar shape='square' src="/ui/logo.png" style={{ width: 40, height: 40 }} />
+            <Avatar shape='square' src="/logo.png" style={{ width: 40, height: 40 }} />
             <SwapOutlined />
             {
               application?.icon ?

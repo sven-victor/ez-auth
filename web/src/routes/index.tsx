@@ -1,11 +1,11 @@
-import React, { lazy, Suspense } from 'react';
-import Loading from '../components/Loading';
-import { UserOutlined, AppstoreOutlined, SafetyOutlined, HomeOutlined } from '@ant-design/icons';
+import { lazy } from 'react';
+import { withSuspense, IRoute } from 'ez-console';
+
+import { UserOutlined, AppstoreOutlined, HomeOutlined } from '@ant-design/icons';
+import { TabsProps } from 'antd';
 
 // Lazy load page components
 const Home = lazy(() => import('@/pages/Home'));
-const NotFound = lazy(() => import('@/pages/NotFound'));
-const Forbidden = lazy(() => import('@/pages/Forbidden'));
 const UserList = lazy(() => import('@/pages/User/List'));
 const UserDetail = lazy(() => import('@/pages/User/Detail'));
 const UserForm = lazy(() => import('@/pages/User/Form'));
@@ -17,23 +17,24 @@ const OIDCTestPage = lazy(() => import('@/pages/OIDC/TestPage'));
 const OIDCCallback = lazy(() => import('@/pages/OIDC/Callback'));
 const OIDCAuthorize = lazy(() => import('@/pages/OIDC/Authorize'));
 
-// Wrap lazy loaded components
-const withSuspense = (Component: React.LazyExoticComponent<any>) => (
-  <Suspense fallback={<Loading />}>
-    <Component />
-  </Suspense>
-);
 
 // Public routes - no authentication required
 export const publicRoutes: IRoute[] = [
   {
-    path: '/404',
-    element: withSuspense(NotFound),
+    path: '/',
+    element: withSuspense(Home),
+    name: 'home',
+    icon: <HomeOutlined />,
     index: true,
   },
   {
-    path: '/403',
-    element: withSuspense(Forbidden),
+    path: '/oidc/test',
+    element: withSuspense(OIDCTestPage),
+    index: true,
+  },
+  {
+    path: '/oidc/authorize',
+    element: withSuspense(OIDCAuthorize),
     index: true,
   },
   {
@@ -43,144 +44,115 @@ export const publicRoutes: IRoute[] = [
   },
 ];
 
-// Private routes - authentication required, uses main layout
-export const privateRoutes: IRoute[] = [
+const userManagementRoute: IRoute = {
+  path: '/authorization/users',
+  name: 'users',
+  icon: <UserOutlined />,
+  permissions: ['authorization:user:list', 'authorization:user:view', 'authorization:user:create', 'authorization:user:update'],
+  children: [
+    {
+      path: '/authorization/users',
+      element: withSuspense(UserList),
+      index: true,
+      permissions: ['authorization:user:list'],
+    },
+    {
+      path: '/authorization/users/:id',
+      element: withSuspense(UserDetail),
+      index: true,
+      permissions: ['authorization:user:view'],
+    },
+
+    {
+      path: '/authorization/users/create',
+      element: withSuspense(UserForm),
+      permissions: ['authorization:user:create'],
+      index: true,
+    },
+    {
+      path: '/authorization/users/:id/edit',
+      element: withSuspense(UserForm),
+      permissions: ['authorization:user:update'],
+      index: true,
+    },
+  ],
+}
+
+
+
+export const PrivateRoutes: IRoute[] = [
   {
-    path: '/',
-    element: withSuspense(Home),
-    name: 'home',
-    icon: <HomeOutlined />,
-    index: true,
-  },
-  {
-    path: '/',
-    is_private: true,
+    path: '/applications',
+    name: 'application_management',
+    icon: <AppstoreOutlined />,
+    permissions: ['applications:view'],
     children: [
       {
-        path: '/users',
-        name: 'user_management',
-        icon: <UserOutlined />,
-        permissions: ['authorization:user:list', 'authorization:user:view', 'authorization:user:create', 'authorization:user:update'],
-        children: [
-          {
-            path: '/users',
-            element: withSuspense(UserList),
-            index: true,
-            permissions: ['authorization:user:list'],
-          },
-          {
-            path: '/users/:id',
-            element: withSuspense(UserDetail),
-            index: true,
-            permissions: ['authorization:user:view'],
-          },
-
-          {
-            path: '/users/create',
-            element: withSuspense(UserForm),
-            permissions: ['authorization:user:create'],
-            index: true,
-          },
-          {
-            path: '/users/:id/edit',
-            element: withSuspense(UserForm),
-            permissions: ['authorization:user:update'],
-            index: true,
-          },
-        ],
-      },
-      {
         path: '/applications',
-        name: 'application_management',
-        icon: <AppstoreOutlined />,
-        permissions: ['applications:view'],
-        children: [
-          {
-            path: '/applications',
-            element: withSuspense(ApplicationList),
-            index: true,
-            permissions: ['applications:view'],
-          },
-          {
-            path: '/applications/:id',
-            element: withSuspense(ApplicationDetail),
-            index: true,
-            permissions: ['applications:view'],
-          },
-          {
-            path: '/applications/create',
-            element: withSuspense(ApplicationForm),
-            permissions: ['applications:create'],
-            index: true,
-          },
-          {
-            path: '/applications/:id/edit',
-            element: withSuspense(ApplicationForm),
-            permissions: ['applications:update'],
-            index: true,
-          },
-        ],
-      },
-      {
-        path: '/settings/ldap',
-        name: 'ldap_settings',
-        icon: <SafetyOutlined />,
-        element: withSuspense(LDAPSetting),
+        element: withSuspense(ApplicationList),
         index: true,
-        permissions: ['system:settings:view', "system:settings:update"],
+        permissions: ['applications:view'],
       },
-      // Redirect and error handling
       {
-        path: '*',
-        element: withSuspense(NotFound),
+        path: '/applications/:id',
+        element: withSuspense(ApplicationDetail),
+        index: true,
+        permissions: ['applications:view'],
+      },
+      {
+        path: '/applications/create',
+        element: withSuspense(ApplicationForm),
+        permissions: ['applications:create'],
+        index: true,
+      },
+      {
+        path: '/applications/:id/edit',
+        element: withSuspense(ApplicationForm),
+        permissions: ['applications:update'],
         index: true,
       },
     ],
   },
-
-  {
-    is_private: true,
-    layout: false,
-    path: '/oidc/test',
-    element: withSuspense(OIDCTestPage),
-    index: true,
-  },
-  {
-    is_private: true,
-    layout: false,
-    path: '/oidc/authorize',
-    element: withSuspense(OIDCAuthorize),
-    index: true,
-  },
-];
-
-export type IRoute = IRouteItem | IRouteGroup;
-
-export interface IRouteItem {
-  path?: string;
-  element: React.ReactNode;
-  name?: string;
-  icon?: React.ReactNode;
-  children?: undefined;
-  is_private?: boolean;
-  layout?: boolean;
-  index: true;
-  permissions?: string[];
+]
+export const transformSettingTabs = (tabs: TabsProps['items']): TabsProps['items'] => {
+  if (!tabs) {
+    return [{
+      key: 'ldap',
+      label: 'LDAP Settings',
+    }];
+  }
+  return tabs?.map((tab) => {
+    if (tab.key === 'ldap') {
+      return {
+        ...tab,
+        children: withSuspense(LDAPSetting),
+      }
+    }
+    return tab
+  })
 }
 
-export interface IRouteGroup {
-  path?: string;
-  element?: React.ReactNode;
-  children: IRoute[];
-  name?: string;
-  icon?: React.ReactNode;
-  is_private?: boolean;
-  layout?: boolean;
-  index?: false;
-  permissions?: string[];
+export const transformRouter = (routes: IRoute[]): IRoute[] => {
+  return routes.map((route) => {
+    if (route.path === '/authorization/users' && route.children && route.name === 'users') {
+      return userManagementRoute;
+    }
+    if (route.name === 'dashboard' && route.path === '/') {
+      return {
+        ...route,
+        path: '/undefined',
+        element: <></>,
+        index: false,
+        children: [],
+        name: undefined,
+      }
+    }
+    if (route.children) {
+      return {
+        ...route,
+        children: transformRouter(route.children),
+      }
+    }
+    return route
+  })
 }
-
-// Merge all routes
-const routes: IRoute[] = [...publicRoutes, ...privateRoutes];
-
-export default routes; 

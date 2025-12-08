@@ -23,14 +23,13 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { PermissionGuard } from '@/components/PermissionGuard';
+import { PermissionGuard } from 'ez-console';
 import { getApplications, deleteApplication } from '@/api/application';
 import { formatDate, getApplicationDescription, getApplicationDisplayName } from '@/utils';
 import { PAGINATION } from '@/constants';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { useRequest } from 'ahooks';
-import Avatar from '@/components/Avatar';
-import Actions from '@/components/Actions';
+import { Avatar, Actions } from 'ez-console';
 
 const { Option } = Select;
 
@@ -150,6 +149,23 @@ const ApplicationList: React.FC = () => {
       }
     },
     {
+      title: t('source', { defaultValue: 'Source' }),
+      dataIndex: 'source',
+      width: 120,
+      responsive: ['md'],
+      key: 'source',
+      render: (source: string) => {
+        switch (source) {
+          case 'ldap':
+            return <Tag color="blue">{t('sourceLdap', { defaultValue: 'LDAP' })}</Tag>;
+          case 'local':
+            return <Tag color="default">{t('sourceLocal', { defaultValue: 'Local' })}</Tag>;
+          default:
+            return <Tag color="red">{source}</Tag>;
+        }
+      },
+    },
+    {
       title: t('status', { defaultValue: 'Status' }),
       dataIndex: 'status',
       width: 120,
@@ -193,14 +209,14 @@ const ApplicationList: React.FC = () => {
             permission: "applications:view",
             icon: <EyeOutlined />,
             tooltip: tCommon('view', { defaultValue: 'View' }),
-            onClick: () => navigate(`/applications/${record.id}`),
+            onClick: async () => navigate(`/applications/${record.id}`),
           },
           {
             key: "edit",
             permission: "applications:edit",
             icon: <EditOutlined />,
             tooltip: tCommon('edit', { defaultValue: 'Edit' }),
-            onClick: () => navigate(`/applications/${record.id}/edit`),
+            onClick: async () => navigate(`/applications/${record.id}/edit`),
           },
           {
             key: "delete",

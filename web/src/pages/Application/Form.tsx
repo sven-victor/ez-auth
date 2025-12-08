@@ -16,13 +16,12 @@ import {
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getApplication, updateApplication, createApplication } from '@/api/application';
-import { useTranslation } from 'react-i18next';
 import { useRequest } from 'ahooks';
 import { GrantTypes, Scopes } from '@/types/application';
 import { UnorderedListOutlined, CodeOutlined } from '@ant-design/icons';
 import { toLDAPAttrs } from '@/utils';
 import { uniq } from 'lodash';
-import { AvatarUpload } from '@/components/Avatar';
+import { AvatarUpload, useTranslation, useSite, type SiteConfig } from 'ez-console';
 import I18nFormItem from '@/components/I18nFormItem';
 const { Option } = Select;
 const { TextArea } = Input;
@@ -46,6 +45,7 @@ interface ApplicationFormValues {
 
 const ApplicationForm: React.FC = () => {
   const { id = "" } = useParams<{ id?: string }>();
+  const { siteConfig } = useSite();
   const navigate = useNavigate();
   const { t } = useTranslation("applications");
   const { t: tCommon } = useTranslation("common");
@@ -195,7 +195,7 @@ const ApplicationForm: React.FC = () => {
           >
             <Radio.Group onChange={(e) => setSource(e.target.value)}>
               <Radio value="local">{t('sourceLocal', { defaultValue: 'Local' })}</Radio>
-              <Radio value="ldap">{t('sourceLdap', { defaultValue: 'LDAP' })}</Radio>
+              <Radio value="ldap" disabled={!((siteConfig as SiteConfig | undefined)?.attrs.application_ldap_enabled)}>{t('sourceLdap', { defaultValue: 'LDAP' })}</Radio>
             </Radio.Group>
           </Form.Item>
         )}
@@ -272,7 +272,7 @@ const ApplicationForm: React.FC = () => {
           }}>
 
             {Object.keys(GrantTypes).map((grantType: string) => {
-              return <Option value={grantType}>{t(`grantType.${grantType}`, { defaultValue: GrantTypes[grantType as keyof typeof GrantTypes] })}</Option>
+              return <Option key={grantType} value={grantType}>{t(`grantType.${grantType}`, { defaultValue: GrantTypes[grantType as keyof typeof GrantTypes] })}</Option>
             })}
           </Select>
         </Form.Item>

@@ -286,7 +286,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *consolemodel.User, r
 			if errors.As(err, &ldapError) {
 				switch ldapError.ResultCode {
 				case ldap.LDAPResultEntryAlreadyExists:
-					return util.NewError("E50040", "User already exists in LDAP")
+					return util.NewErrorMessage("E50040", "User already exists in LDAP")
 				case ldap.LDAPResultNoSuchObject:
 					level.Info(logger).Log("msg", "baseDN may not exist, creating organizational unit", "dn", settings.BaseDN)
 					if err := s.RecursiveCreateOrganizationalUnitEntry(ctx, settings.BaseDN); err != nil {
@@ -694,7 +694,7 @@ func (s *UserService) ListUsers(ctx context.Context, keywords, status string, cu
 		for i, user := range users {
 			if user.LDAPDN == ldapDN {
 				if entry == nil {
-					if user.Status == consolemodel.UserStatusActive {
+					if user.Status != consolemodel.UserStatusDisabled && user.Status != consolemodel.UserStatusDeleted {
 						users[i].Status = model.UserStatusInvalidLDAPBinding
 					}
 				} else {

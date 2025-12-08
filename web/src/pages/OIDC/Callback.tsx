@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Button, Space } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 const OIDCCallback: React.FC = () => {
   const { t } = useTranslation("oidc");
   const [searchParams] = useSearchParams();

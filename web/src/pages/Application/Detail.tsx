@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, message, Space, Tag, Tabs, Table, Descriptions, Typography, Badge, Empty, Popconfirm, Tooltip } from 'antd';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { TeamOutlined, EditOutlined, ArrowLeftOutlined, KeyOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getApplication, deleteApplicationKey, removeUserFromApplication, deleteApplicationRole, getApplicationKeys, getApplicationIssuerKeys, deleteApplicationIssuerKey } from '@/api/application';
-import { PermissionGuard } from '@/components/PermissionGuard';
-import { usePermission } from '@/hooks/usePermission';
+import { PermissionGuard, usePermission } from 'ez-console';
 import { formatDate, getApplicationDisplayName, getApplicationDescription } from '@/utils';
 import { useRequest } from 'ahooks';
 import CreateAccessKeyModel from './components/CreateAccessKeyModel';
@@ -463,22 +462,29 @@ const ApplicationDetail: React.FC = () => {
     }
   }, [currentTab])
 
+  const description = useMemo(() => {
+    return getApplicationDescription(application, i18n.language);
+  }, [application, i18n.language]);
+
+  const displayName = useMemo(() => {
+    return getApplicationDisplayName(application, i18n.language);
+  }, [application, i18n.language]);
 
   return (
     <div>
       {(!loading && !application) ? <Empty /> : <Card
         loading={loading}
         title={
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, marginTop: 16 }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 'bold' }}>{getApplicationDisplayName(application, i18n.language)}</div>
-              <div style={{ color: '#888', fontWeight: 'normal' }}>{<Typography.Text
+              <div style={{ fontSize: 20, fontWeight: 'bold' }}>{displayName}</div>
+              <div style={{ color: '#888', fontWeight: 'normal', display: description ? 'block' : 'none' }}>{<Typography.Text
                 style={{ width: '50vw' }}
                 ellipsis={{
                   tooltip: true,
                 }}
               >
-                {getApplicationDescription(application, i18n.language)}
+                {description}
               </Typography.Text>}
               </div>
             </div>

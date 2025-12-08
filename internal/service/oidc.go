@@ -87,7 +87,7 @@ func (s *OIDCService) VerifyApplicationPassword(ctx context.Context, appID, user
 		Where("t_application_user.deleted_at is null and t_user.deleted_at is null and t_application_role.deleted_at is null").
 		First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, util.NewError("E4039", "Unauthorized application")
+			return nil, util.NewErrorMessage("E4039", "Unauthorized application")
 		}
 		return nil, fmt.Errorf("failed to verify application password: %w", err)
 	}
@@ -99,16 +99,16 @@ func (s *OIDCService) VerifyApplicationPassword(ctx context.Context, appID, user
 	}
 	if passwordHash != "" {
 		if bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password+user.Salt)) != nil {
-			return nil, util.NewError("E40019", "Invalid application password")
+			return nil, util.NewErrorMessage("E40019", "Invalid application password")
 		}
 	} else {
 		if user.ForceIndependentPassword {
-			return nil, util.NewError("E40018", "Independent password not set.")
+			return nil, util.NewErrorMessage("E40018", "Independent password not set.")
 		}
 		if user.Source == "ldap" && user.LDAPDN != "" {
 			settings, err := s.Service.GetLDAPSettings(ctx)
 			if err != nil {
-				return nil, util.NewError("E50012", "System error, please contact the administrator", err)
+				return nil, util.NewErrorMessage("E50012", "System error, please contact the administrator", err)
 			}
 
 			if !settings.Enabled {
@@ -120,10 +120,10 @@ func (s *OIDCService) VerifyApplicationPassword(ctx context.Context, appID, user
 			}
 			defer loginConn.Close()
 			if err := loginConn.Bind(user.LDAPDN, password); err != nil {
-				return nil, util.NewError("E40019", "Invalid application password")
+				return nil, util.NewErrorMessage("E40019", "Invalid application password")
 			}
 		} else {
-			return nil, util.NewError("E40019", "Invalid application password")
+			return nil, util.NewErrorMessage("E40019", "Invalid application password")
 		}
 	}
 	return &model.OIDCUserInfo{
@@ -593,7 +593,7 @@ func (s *OIDCService) GetApplicationAuthorizationByClientID(ctx context.Context,
 	dbConn := db.Session(ctx)
 	userID := middleware.GetUserIDFromContext(ctx)
 	if len(userID) == 0 {
-		return nil, util.NewError("E4011", "user not found")
+		return nil, util.NewErrorMessage("E4011", "user not found")
 	}
 	var app model.Application
 	if err := dbConn.Select([]string{

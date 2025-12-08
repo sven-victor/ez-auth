@@ -30,13 +30,12 @@ import {
   UnlockOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { PermissionGuard } from '@/components/PermissionGuard';
+import { PermissionGuard, Avatar } from 'ez-console';
 import { getUsers, deleteUser, resetUserPassword, restoreUser, unlockUser } from '@/api/user';
 import { formatDate } from '@/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from 'ez-console';
 import { useRequest } from 'ahooks';
-import Avatar from '@/components/Avatar';
-import Actions from '@/components/Actions';
+import { Actions } from 'ez-console';
 import Table, { TableRef } from '@/components/Table';
 import { createStyles } from 'antd-style';
 import FixUserModal from './components/FixUserModal';
@@ -106,7 +105,7 @@ const UserList: React.FC = () => {
 
 
   // Restore user
-  const { run: handleRestore } = useRequest(restoreUser, {
+  const { runAsync: handleRestore } = useRequest(restoreUser, {
     onSuccess: () => {
       message.success(t('restoreSuccess', { defaultValue: 'User restored successfully' }));
       tableRef.current?.reload()
@@ -210,7 +209,7 @@ const UserList: React.FC = () => {
             src={record.avatar}
             style={{ marginRight: 8 }}
           />
-          <Link to={`/users/${record.id}`}>{record.username}</Link>
+          <Link to={`/authorization/users/${record.id}`}>{record.username}</Link>
         </div>
       ),
       responsive: ['lg'],
@@ -228,7 +227,7 @@ const UserList: React.FC = () => {
       className: styles.nameColumn,
       render: (_: any, record: API.User) => {
         return (<div style={{ display: 'block', alignItems: 'center' }}>
-          <Link to={`/users/${record.id}`}>{record.username}</Link>
+          <Link to={`/authorization/users/${record.id}`}>{record.username}</Link>
           <div style={{ color: 'rgba(0,0,0,0.65)' }}>{record.full_name}</div>
         </div>)
       }
@@ -325,40 +324,40 @@ const UserList: React.FC = () => {
       title: tCommon('actions', { defaultValue: 'Actions' }),
       key: 'action',
       render: (_: any, record: API.User) => {
-        const actions = [{
+        const actions: React.ComponentProps<typeof Actions>['actions'] = [{
           key: "view",
           permission: "authorization:user:view",
           icon: <EyeOutlined />,
           tooltip: t('viewDetail', { defaultValue: 'View Detail' }),
-          onClick: () => navigate(`/users/${record.id}`),
+          onClick: async () => navigate(`/authorization/users/${record.id}`),
         }, {
           key: "edit",
           permission: "authorization:user:update",
           icon: <EditOutlined />,
           tooltip: t('edit', { defaultValue: 'Edit' }),
           hidden: record.status === 'locked' || record.status === 'deleted',
-          onClick: () => navigate(`/users/${record.id}/edit`),
+          onClick: async () => navigate(`/authorization/users/${record.id}/edit`),
         }, {
           key: "unlock",
           permission: "authorization:user:update",
           icon: <UnlockOutlined />,
           tooltip: t('unlock', { defaultValue: 'Unlock' }),
           hidden: record.status !== 'locked',
-          onClick: () => handleUnlock(record.id),
+          onClick: async () => handleUnlock(record.id),
         }, {
           key: "resetPassword",
           permission: "authorization:user:resetPassword",
           icon: <KeyOutlined />,
           tooltip: t('resetPassword', { defaultValue: 'Reset Password' }),
           hidden: (!((record.source === 'local' && !record.ldap_dn) || (record.source === 'ldap' && record.ldap_dn)) || record.status === 'invalid_ldap_binding') || record.status === 'deleted',
-          onClick: () => handleResetPassword(record.id, record.username, record.email),
+          onClick: async () => handleResetPassword(record.id, record.username, record.email),
         }, {
           key: "fixUser",
           permission: "authorization:user:update",
           icon: <ToolOutlined />,
           tooltip: t('fixUser', { defaultValue: 'Fix User' }),
           hidden: !((record.source === 'ldap' && !record.ldap_dn) || (record.status === 'invalid_ldap_binding') || (record.source === 'local' && record.ldap_dn)),
-          onClick: () => setFixUser(record),
+          onClick: async () => setFixUser(record),
         }, {
           key: "restore",
           permission: "authorization:user:update",
@@ -367,7 +366,7 @@ const UserList: React.FC = () => {
           hidden: record.status !== 'deleted',
           confirm: {
             title: t('restoreConfirm', { defaultValue: 'Are you sure you want to restore this user?' }),
-            onConfirm: () => handleRestore(record.id),
+            onConfirm: async () => await handleRestore(record.id),
           }
         }, {
           key: "delete",
@@ -381,7 +380,6 @@ const UserList: React.FC = () => {
             okText: tCommon('confirm', { defaultValue: 'Confirm' }),
             cancelText: tCommon('cancel', { defaultValue: 'Cancel' }),
           }
-
         }]
         return <div style={{ minWidth: 120 }}>
           <Actions actions={actions} />
@@ -463,7 +461,7 @@ const UserList: React.FC = () => {
                 type="primary"
                 icon={<UserAddOutlined />}
                 style={{ marginBottom: 16 }}
-                onClick={() => navigate('/users/create')}
+                onClick={() => navigate('/authorization/users/create')}
               >
                 {t('create', { defaultValue: 'Create User' })}
               </Button>

@@ -66,6 +66,11 @@ func (c *LDAPController) GetLDAPSettings(ctx *gin.Context) {
 	}
 	settings.ClientKey = nil
 
+	applicationLDAPEnabled, err := c.svc.GetBoolSetting(ctx, model.SettingLDAPApplicationLDAPEnabled, false)
+	if err != nil {
+		util.RespondWithError(ctx, err)
+		return
+	}
 	applicationBaseDN, err := c.svc.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
 	if err != nil {
 		util.RespondWithError(ctx, err)
@@ -84,16 +89,14 @@ func (c *LDAPController) GetLDAPSettings(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.Response{
-		Code: "0",
-		Data: model.LDAPSettings{
-			LDAPApplicationSettings: model.LDAPApplicationSettings{
-				ApplicationBaseDN:      applicationBaseDN,
-				ApplicationFilter:      applicationFilter,
-				ApplicationObjectClass: applicationObjectClass,
-			},
-			Options: settings,
+	util.RespondWithSuccess(ctx, http.StatusOK, model.LDAPSettings{
+		LDAPApplicationSettings: model.LDAPApplicationSettings{
+			ApplicationBaseDN:      applicationBaseDN,
+			ApplicationFilter:      applicationFilter,
+			ApplicationObjectClass: applicationObjectClass,
+			ApplicationLDAPEnabled: applicationLDAPEnabled,
 		},
+		Options: settings,
 	})
 }
 
@@ -150,6 +153,7 @@ func (c *LDAPController) UpdateLDAPSettings(ctx *gin.Context) {
 		string(consolemodel.SettingLDAPCACert):          req.CACert,
 		string(consolemodel.SettingLDAPClientCert):      req.ClientCert,
 		string(consolemodel.SettingLDAPInsecure):        strconv.FormatBool(req.Insecure),
+		string(model.SettingLDAPApplicationLDAPEnabled): strconv.FormatBool(req.ApplicationLDAPEnabled),
 		string(model.SettingLDAPApplicationBaseDN):      req.ApplicationBaseDN,
 		string(model.SettingLDAPApplicationFilter):      req.ApplicationFilter,
 		string(model.SettingLDAPApplicationObjectClass): req.ApplicationObjectClass,
@@ -178,10 +182,7 @@ func (c *LDAPController) UpdateLDAPSettings(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.Response{
-		Code: "0",
-		Data: gin.H{"message": "Update LDAP Settings Success"},
-	})
+	util.RespondWithSuccess(ctx, http.StatusOK, gin.H{"message": "Update LDAP Settings Success"})
 
 }
 
@@ -240,8 +241,5 @@ func (c *LDAPController) TestLDAPConnection(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.Response{
-		Code: "0",
-		Data: resp,
-	})
+	util.RespondWithSuccess(ctx, http.StatusOK, resp)
 }

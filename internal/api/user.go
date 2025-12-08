@@ -71,13 +71,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.PaginationResponse{
-		Code:     "0",
-		Data:     users,
-		Total:    total,
-		Current:  current,
-		PageSize: pageSize,
-	})
+	util.RespondWithSuccessList(ctx, http.StatusOK, users, total, current, pageSize)
 }
 
 type CreateUserRequest struct {
@@ -194,10 +188,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, util.Response{
-		Code: "0",
-		Data: user,
-	})
+	util.RespondWithSuccess(ctx, http.StatusOK, user)
 }
 
 type UpdateUserRequest struct {
@@ -295,10 +286,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 		}
 
 	}
-	ctx.JSON(http.StatusOK, util.Response{
-		Code: "0",
-		Data: user,
-	})
+	util.RespondWithSuccess(ctx, http.StatusOK, user)
 }
 
 // DeleteUser deletes a user by ID.
@@ -417,10 +405,7 @@ func (c *UserController) ImportLDAPUsers(ctx *gin.Context) {
 			})
 			return
 		}
-		ctx.JSON(http.StatusOK, util.Response{
-			Code: "0",
-			Data: users,
-		})
+		util.RespondWithSuccess(ctx, http.StatusOK, users)
 	} else {
 		err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
 			auditLog.ActionName = "Import LDAP Users"
@@ -432,10 +417,7 @@ func (c *UserController) ImportLDAPUsers(ctx *gin.Context) {
 					Err:      err,
 				}
 			}
-			ctx.JSON(http.StatusOK, util.Response{
-				Code: "0",
-				Data: users,
-			})
+			util.RespondWithSuccess(ctx, http.StatusOK, users)
 			return nil
 		})
 		if err != nil {
