@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,7 +30,7 @@ func NewLDAPController(svc server.Service) *LDAPController {
 }
 
 func init() {
-	server.RegisterControllers(func(svc server.Service) server.Controller {
+	server.RegisterControllers(func(ctx context.Context, svc server.Service) server.Controller {
 		return NewLDAPController(svc)
 	})
 }
@@ -39,7 +40,7 @@ func init() {
 // @Description Registers all LDAP Settings endpoints
 // @Tags LDAP
 // @Router /api/ldap [get]
-func (c *LDAPController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *LDAPController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	ldap := router.Group("/ldap")
 	ldap.GET("/settings", c.GetLDAPSettings)
 	ldap.POST("/settings", c.UpdateLDAPSettings)

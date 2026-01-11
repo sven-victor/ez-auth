@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ import (
 type EchoController struct {
 }
 
-func (c *EchoController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *EchoController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	router.GET("/echo", c.Get)
 }
 
@@ -28,7 +29,7 @@ func (c *EchoController) Get(ctx *gin.Context) {
 }
 
 func init() {
-	server.RegisterControllers(func(svc server.Service) server.Controller {
+	server.RegisterControllers(func(ctx context.Context, svc server.Service) server.Controller {
 		return &EchoController{}
 	})
 }

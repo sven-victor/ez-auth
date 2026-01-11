@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,7 +25,7 @@ type ApplicationController struct {
 	svc *service.ApplicationService
 }
 
-func (c *ApplicationController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *ApplicationController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	apps := router.Group("/applications")
 	{
 		apps.GET("", middleware.RequirePermission("applications:list"), c.ListApplications)
@@ -812,7 +813,7 @@ func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
 }
 
 func init() {
-	server.RegisterControllers(func(svc server.Service) server.Controller {
+	server.RegisterControllers(func(ctx context.Context, svc server.Service) server.Controller {
 		return &ApplicationController{
 			svc: service.NewApplicationService(svc),
 		}

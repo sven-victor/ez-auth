@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -21,7 +22,7 @@ type UserController struct {
 	svc *service.UserService
 }
 
-func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *UserController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	users := router.Group("/users")
 	{
 		users.GET("", middleware.RequirePermission("authorization:user:list"), c.ListUsers)
@@ -429,7 +430,7 @@ func (c *UserController) ImportLDAPUsers(ctx *gin.Context) {
 }
 
 func init() {
-	server.RegisterControllers(func(svc server.Service) server.Controller {
+	server.RegisterControllers(func(ctx context.Context, svc server.Service) server.Controller {
 		return &UserController{
 			svc: service.NewUserService(svc),
 		}

@@ -8,7 +8,11 @@ import (
 	consoleserver "github.com/sven-victor/ez-console/server"
 )
 
-var rootCmd = consoleserver.NewCommandServer("ez-auth", "ez-auth", consoleserver.WithEngineOptions(server.RegisterStaticFiles))
+var (
+	VERSION = "1.0.0"
+)
+
+var rootCmd = consoleserver.NewCommandServer("ez-auth", VERSION, "ez-auth", consoleserver.WithEngineOptions(server.RegisterStaticFiles))
 
 func main() {
 	rootCmd.Execute()

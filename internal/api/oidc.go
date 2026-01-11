@@ -34,7 +34,7 @@ type OIDCController struct {
 	svc *service.OIDCService
 }
 
-func (c *OIDCController) RegisterRoutes(router *gin.RouterGroup) {
+func (c *OIDCController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	oauth2 := router.Group("/oauth2")
 	{
 		// well-known endpoints
@@ -537,7 +537,7 @@ func (c *OIDCController) UserInfo(ctx *gin.Context) {
 }
 
 func init() {
-	server.RegisterControllers(func(svc server.Service) server.Controller {
+	server.RegisterControllers(func(ctx context.Context, svc server.Service) server.Controller {
 		return &OIDCController{
 			svc: service.NewOIDCService(svc),
 		}

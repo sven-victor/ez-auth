@@ -20,7 +20,7 @@
     "chart.js": "^4.4.1",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.10",
-    "ez-console": "github:sven-victor/ez-console#c26c7248b02a8b64d47eeddd47fc9634a3a6d7ca&path:web",
+    "ez-console": "github:sven-victor/ez-console#v1.9.0&path:web",
     "i18next": "^25.0.0",
     "i18next-browser-languagedetector": "^8.0.4",
     "jose": "^6.0.11",
