@@ -27,9 +27,7 @@ const ApplicationDetail: React.FC = () => {
   const defaultActiveKey = tab || 'basic';
 
   const [createKeyModalVisible, setCreateKeyModalVisible] = useState(false);
-  const [keys, setKeys] = useState<API.ApplicationKey[]>([]);
   const [createIssuerKeyModalVisible, setCreateIssuerKeyModalVisible] = useState(false);
-  const [issuerKeys, setIssuerKeys] = useState<API.ApplicationIssuerKey[]>([]);
 
   const [users, setUsers] = useState<API.ApplicationUser[]>([]);
   const [assignUserModalVisible, setAssignUserModalVisible] = useState(false);
@@ -52,29 +50,23 @@ const ApplicationDetail: React.FC = () => {
   })
 
 
-  const { run: fetchApplicationKeys } = useRequest(async () => {
+  const { run: fetchApplicationKeys, data: keys = [], loading: keysLoading } = useRequest(async () => {
     if (!hasPermission('applications:keys:view')) {
       return [];
     }
     return await getApplicationKeys(id!);
   }, {
-    onSuccess: (data) => {
-      setKeys(data);
-    },
     onError: (error) => {
       message.error(t('detail.fetch_error', { defaultValue: 'Failed to fetch application keys: {{error}}', error }));
     },
   });
 
-  const { run: fetchIssuerKeys } = useRequest(async () => {
+  const { run: fetchIssuerKeys, data: issuerKeys = [], loading: issuerKeysLoading } = useRequest(async () => {
     if (!hasPermission('applications:issuer-keys:view')) {
       return [];
     }
     return await getApplicationIssuerKeys(id!);
   }, {
-    onSuccess: (data) => {
-      setIssuerKeys(data);
-    },
     onError: (error) => {
       message.error(t('detail.fetch_error', { defaultValue: 'Failed to fetch issuer keys: {{error}}', error }));
     },
@@ -589,6 +581,7 @@ const ApplicationDetail: React.FC = () => {
               columns={accessKeysColumns}
               dataSource={keys}
               rowKey="id"
+              loading={keysLoading}
             />
           </TabPane>
 
@@ -597,6 +590,7 @@ const ApplicationDetail: React.FC = () => {
               columns={issuerKeysColumns}
               dataSource={issuerKeys}
               rowKey="id"
+              loading={issuerKeysLoading}
             />
           </TabPane>
           <TabPane tab={t('users', { defaultValue: 'Users' })} key="users">
