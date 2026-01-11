@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiPost, apiPut, apiDelete } from 'ez-console';
 import type { UserCreateRequest, UserUpdateRequest, UserListResponse } from '@/types/user';
 
 // Get user list

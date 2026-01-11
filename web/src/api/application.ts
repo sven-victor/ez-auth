@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from './client';
+import { apiGet, apiPost, apiPut, apiDelete } from 'ez-console';
 
 // Get application list
 export const getApplications = async (keywords?: string, status?: string, page?: number, pageSize?: number): Promise<API.ApplicationListResponse> => {

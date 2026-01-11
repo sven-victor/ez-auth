@@ -49,14 +49,14 @@ const Home: React.FC = () => {
 
   if (user) {
     if (user.mfa_enforced && !user.mfa_enabled) {
-      window.location.href = '/console/profile#mfa';
+      window.location.href = '/profile#mfa';
       return
     } else if (user.status === "password_expired") {
-      window.location.href = '/console/profile#password';
+      window.location.href = '/profile#password';
       return
     }
   } else if (!userLoading) {
-    window.location.href = '/console/login?redirect=' + encodeURIComponent(window.location.href);
+    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
     return
   }
   useEffect(() => {
@@ -78,13 +78,13 @@ const Home: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/console/login?redirect=' + encodeURIComponent(window.location.href);
+    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.href);
   };
 
   const userMenu = [
     {
       key: 'profile',
-      label: <a href="/console/profile">{tCommon('profile', { defaultValue: 'Profile' })}</a>,
+      label: <a href="/profile">{tCommon('profile', { defaultValue: 'Profile' })}</a>,
     },
     {
       key: 'logout',

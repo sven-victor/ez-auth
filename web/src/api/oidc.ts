@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPost } from 'ez-console';
 
 export function getOIDCConfig(data: {
   wellknow_endpoint?: string;

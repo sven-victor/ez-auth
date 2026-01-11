@@ -24,13 +24,6 @@ export default defineConfig({
           'X-Forwarded-For': '117.139.165.22,192.168.1.100',
         },
       },
-      '/console': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        headers: {
-          'X-Forwarded-For': '127.0.0.1',
-        },
-      },
     },
     allowedHosts: ['idas.microops.com'],
     host: '0.0.0.0',
