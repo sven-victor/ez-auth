@@ -193,7 +193,7 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, app *model.A
 }
 
 // UpdateApplication updates application information
-func (s *ApplicationService) UpdateApplication(ctx context.Context, app *model.Application) error {
+func (s *ApplicationService) UpdateApplication(ctx context.Context, orgID string, app *model.Application) error {
 	// Update database record
 	dbConn := db.Session(ctx)
 	return dbConn.Transaction(func(tx *gorm.DB) error {
@@ -202,26 +202,26 @@ func (s *ApplicationService) UpdateApplication(ctx context.Context, app *model.A
 		}
 
 		var oriApp model.Application
-		if err := tx.Where("resource_id = ?", app.ResourceID).First(&oriApp).Error; err != nil {
+		if err := tx.Where("resource_id = ? AND organization_id = ?", app.ResourceID, orgID).First(&oriApp).Error; err != nil {
 			return fmt.Errorf("failed to get original application: %w", err)
 		}
 
 		updateFields := []string{"name", "display_name", "display_name_i18n", "description", "description_i18n", "icon", "status", "grant_types", "uri", "redirect_uris", "scopes", "force_independent_password"}
-		if err := tx.Where("resource_id = ?", app.ResourceID).Select(updateFields).Updates(app).Error; err != nil {
+		if err := tx.Where("resource_id = ? AND organization_id = ?", app.ResourceID, orgID).Select(updateFields).Updates(app).Error; err != nil {
 			return fmt.Errorf("failed to update application: %w", err)
 		}
 		return nil
 	})
 }
 
-func (s *ApplicationService) UpdateApplicationEntry(ctx context.Context, appID string, entry []model.LDAPAttr) error {
+func (s *ApplicationService) UpdateApplicationEntry(ctx context.Context, orgID, appID string, entry []model.LDAPAttr) error {
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
 	}
 	defer ldapSession.Close()
 
-	app, err := s.GetApplication(ctx, appID)
+	app, err := s.GetApplication(ctx, orgID, appID)
 	if err != nil {
 		return fmt.Errorf("failed to get application: %w", err)
 	}
@@ -268,7 +268,7 @@ func (s *ApplicationService) UpdateApplicationEntry(ctx context.Context, appID s
 }
 
 // DeleteApplication deletes an application
-func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string) error {
+func (s *ApplicationService) DeleteApplication(ctx context.Context, orgID, appID string) error {
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
@@ -276,7 +276,7 @@ func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string
 	defer ldapSession.Close()
 	dbConn := db.Session(ctx)
 	var app model.Application
-	if err := dbConn.Unscoped().Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := dbConn.Unscoped().Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return fmt.Errorf("failed to find application: %w", err)
 	}
 
@@ -324,10 +324,10 @@ func (s *ApplicationService) DeleteApplication(ctx context.Context, appID string
 }
 
 // GetApplication retrieves application details
-func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (*model.Application, error) {
+func (s *ApplicationService) GetApplication(ctx context.Context, orgID, appID string) (*model.Application, error) {
 	var app model.Application
 	dbConn := db.Session(ctx)
-	if err := dbConn.Unscoped().Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := dbConn.Unscoped().Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application: %w", err)
 	}
 	// Get application roles
@@ -483,12 +483,12 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID string) (
 }
 
 // ListApplications retrieves the application list
-func (s *ApplicationService) ListApplications(ctx context.Context, keywords, status string, page, pageSize int) ([]model.Application, int64, error) {
+func (s *ApplicationService) ListApplications(ctx context.Context, orgID, keywords, status string, page, pageSize int) ([]model.Application, int64, error) {
 	var apps []model.Application
 	var total int64
 
 	dbConn := db.Session(ctx)
-	query := dbConn.Model(&model.Application{})
+	query := dbConn.Model(&model.Application{}).Where("organization_id = ?", orgID)
 	if keywords != "" {
 		query = query.Where("name LIKE ?", "%"+keywords+"%")
 	}
@@ -557,9 +557,15 @@ func (s *ApplicationService) ListApplications(ctx context.Context, keywords, sta
 }
 
 // CreateApplicationRole creates an application role
-func (s *ApplicationService) CreateApplicationRole(ctx context.Context, role *model.ApplicationRole) error {
-	// Create application role
+func (s *ApplicationService) CreateApplicationRole(ctx context.Context, orgID string, role *model.ApplicationRole) error {
+	// Verify application belongs to organization
 	conn := db.Session(ctx)
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", role.ApplicationID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
+	// Create application role
 	if err := conn.Create(role).Error; err != nil {
 		return fmt.Errorf("failed to create application role: %w", err)
 	}
@@ -567,15 +573,27 @@ func (s *ApplicationService) CreateApplicationRole(ctx context.Context, role *mo
 }
 
 // UpdateApplicationRole updates an application role
-func (s *ApplicationService) UpdateApplicationRole(ctx context.Context, appID, roleID string, role *model.ApplicationRole) error {
+func (s *ApplicationService) UpdateApplicationRole(ctx context.Context, orgID, appID, roleID string, role *model.ApplicationRole) error {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
 	if err := conn.Model(role).Select("name", "description").Where("application_id = ? AND resource_id = ?", appID, roleID).Updates(role).Error; err != nil {
 		return fmt.Errorf("failed to update application role: %w", err)
 	}
 	return nil
 }
-func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, appID, roleID string) error {
+func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, orgID, appID, roleID string) error {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
 	if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).Delete(&model.ApplicationRole{}).Error; err != nil {
 		return fmt.Errorf("failed to delete application role: %w", err)
 	}
@@ -583,7 +601,7 @@ func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, appID, r
 }
 
 // AssignUserRole assigns a role to a user, writing the association to the database and adding the member info to the application's LDAP entry
-func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, roleID string) error {
+func (s *ApplicationService) AssignUserRole(ctx context.Context, orgID, appID, userID, roleID string) error {
 	logger := log.GetContextLogger(ctx)
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
@@ -601,9 +619,9 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
 		return fmt.Errorf("failed to find user: %w", err)
 	}
-	// Get application information
+	// Get application information and verify it belongs to organization
 	var app model.Application
-	if err := conn.Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return fmt.Errorf("failed to find application: %w", err)
 	}
 	// if roleID is not empty, check if the role exists
@@ -728,7 +746,7 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, appID, userID, 
 }
 
 // UnassignUserRole unassigns a role from a user, removes the association from the database, and deletes the member info from the application's LDAP entry
-func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID string) error {
+func (s *ApplicationService) UnassignUserRole(ctx context.Context, orgID, appID, userID string) error {
 	logger := log.GetContextLogger(ctx)
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
@@ -742,9 +760,9 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
 		return fmt.Errorf("failed to find user: %w", err)
 	}
-	// Get application information
+	// Get application information and verify it belongs to organization
 	var app model.Application
-	if err := conn.Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return fmt.Errorf("failed to find application: %w", err)
 	}
 
@@ -812,16 +830,23 @@ func (s *ApplicationService) UnassignUserRole(ctx context.Context, appID, userID
 }
 
 // ListApplicationRoles retrieves the list of application roles
-func (s *ApplicationService) ListApplicationRoles(ctx context.Context, appID string) ([]model.ApplicationRole, error) {
+func (s *ApplicationService) ListApplicationRoles(ctx context.Context, orgID, appID string) ([]model.ApplicationRole, error) {
+	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return nil, fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var roles []model.ApplicationRole
-	if err := db.Session(ctx).Where("application_id = ?", appID).Find(&roles).Error; err != nil {
+	if err := conn.Where("application_id = ?", appID).Find(&roles).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application roles: %w", err)
 	}
 	return roles, nil
 }
 
 // ListApplicationUsers retrieves the list of users for an application
-func (s *ApplicationService) ListApplicationUsers(ctx context.Context, appID string) ([]model.User, error) {
+func (s *ApplicationService) ListApplicationUsers(ctx context.Context, orgID, appID string) ([]model.User, error) {
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get LDAP session: %w", err)
@@ -835,8 +860,9 @@ func (s *ApplicationService) ListApplicationUsers(ctx context.Context, appID str
 		return nil, fmt.Errorf("LDAP is not enabled")
 	}
 	dbConn := db.Session(ctx)
+	// Verify application belongs to organization
 	var app model.Application
-	if err := dbConn.Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := dbConn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application: %w", err)
 	}
 	// Get application information from LDAP
@@ -903,7 +929,7 @@ func (s *ApplicationService) ListApplicationUsers(ctx context.Context, appID str
 }
 
 // ImportLDAPApplications imports LDAP applications
-func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applicationDNs []string) ([]model.Application, error) {
+func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, orgID string, applicationDNs []string) ([]model.Application, error) {
 	logger := log.GetContextLogger(ctx)
 	applicationBaseDN, err := s.GetStringSetting(ctx, model.SettingLDAPApplicationBaseDN, "")
 	if err != nil {
@@ -969,8 +995,9 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 					continue
 				}
 				applications = append(applications, model.Application{
-					Name:   entry.GetAttributeValue("cn"),
-					LDAPDN: entry.DN,
+					Name:           entry.GetAttributeValue("cn"),
+					LDAPDN:         entry.DN,
+					OrganizationID: orgID,
 				})
 			}
 		}
@@ -1001,8 +1028,9 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 			}
 			entry := result.Entries[0]
 			application := model.Application{
-				Name:   entry.GetAttributeValue("cn"),
-				LDAPDN: entry.DN,
+				Name:           entry.GetAttributeValue("cn"),
+				LDAPDN:         entry.DN,
+				OrganizationID: orgID,
 				Base: consolemodel.Base{
 					ResourceID: entry.GetAttributeValue("entryUUID"),
 					CreatedAt:  util.SafeParseTime("20060102150405Z", entry.GetAttributeValue("createTimestamp")),
@@ -1071,10 +1099,10 @@ func (s *ApplicationService) ImportLDAPApplications(ctx context.Context, applica
 }
 
 // CreateApplicationKey creates a new key for an application.
-func (s *ApplicationService) CreateApplicationKey(ctx context.Context, appID, name string, expiresAt *time.Time) (*model.ApplicationKey, error) {
+func (s *ApplicationService) CreateApplicationKey(ctx context.Context, orgID, appID, name string, expiresAt *time.Time) (*model.ApplicationKey, error) {
 	conn := db.Session(ctx)
 	var app model.Application
-	if err := conn.Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application: %w", err)
 	}
 	var count int64
@@ -1103,8 +1131,14 @@ func (s *ApplicationService) CreateApplicationKey(ctx context.Context, appID, na
 }
 
 // DeleteApplicationKey deletes a key for an application.
-func (s *ApplicationService) DeleteApplicationKey(ctx context.Context, appID string, keyID string) error {
+func (s *ApplicationService) DeleteApplicationKey(ctx context.Context, orgID, appID string, keyID string) error {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var key model.ApplicationKey
 	if err := conn.Where("application_id = ? and resource_id = ?", appID, keyID).First(&key).Error; err != nil {
 		return fmt.Errorf("failed to find application key: %w", err)
@@ -1116,8 +1150,14 @@ func (s *ApplicationService) DeleteApplicationKey(ctx context.Context, appID str
 }
 
 // ListApplicationKeys lists all keys for an application.
-func (s *ApplicationService) ListApplicationKeys(ctx context.Context, appID string) ([]model.ApplicationKey, error) {
+func (s *ApplicationService) ListApplicationKeys(ctx context.Context, orgID, appID string) ([]model.ApplicationKey, error) {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return nil, fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var keys []model.ApplicationKey
 	if err := conn.Where("application_id = ?", appID).Find(&keys).Error; err != nil {
 		return nil, fmt.Errorf("failed to list application keys: %w", err)
@@ -1126,11 +1166,11 @@ func (s *ApplicationService) ListApplicationKeys(ctx context.Context, appID stri
 }
 
 // CreateApplicationIssuerKey creates a new issuer key for an application.
-func (s *ApplicationService) CreateApplicationIssuerKey(ctx context.Context, appID, name, algorithm, privateKey string) (*model.ApplicationPrivateKey, error) {
+func (s *ApplicationService) CreateApplicationIssuerKey(ctx context.Context, orgID, appID, name, algorithm, privateKey string) (*model.ApplicationPrivateKey, error) {
 	conn := db.Session(ctx)
-	// Check if application exists and key count
+	// Check if application exists and key count, verify it belongs to organization
 	var app model.Application
-	if err := conn.Model(&model.Application{}).Where("resource_id = ?", appID).First(&app).Error; err != nil {
+	if err := conn.Model(&model.Application{}).Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application: %w", err)
 	}
 	var count int64
@@ -1187,8 +1227,14 @@ func (s *ApplicationService) CreateApplicationIssuerKey(ctx context.Context, app
 }
 
 // DeleteApplicationIssuerKey deletes an issuer key for an application.
-func (s *ApplicationService) DeleteApplicationIssuerKey(ctx context.Context, appID, keyID string) error {
+func (s *ApplicationService) DeleteApplicationIssuerKey(ctx context.Context, orgID, appID, keyID string) error {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var key model.ApplicationPrivateKey
 	if err := conn.Where("application_id = ? and resource_id = ?", appID, keyID).First(&key).Error; err != nil {
 		return fmt.Errorf("failed to find application issuer key: %w", err)
@@ -1200,8 +1246,14 @@ func (s *ApplicationService) DeleteApplicationIssuerKey(ctx context.Context, app
 }
 
 // ListApplicationIssuerKeys lists all issuer keys for an application.
-func (s *ApplicationService) ListApplicationIssuerKeys(ctx context.Context, appID string) ([]model.ApplicationPrivateKey, error) {
+func (s *ApplicationService) ListApplicationIssuerKeys(ctx context.Context, orgID, appID string) ([]model.ApplicationPrivateKey, error) {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return nil, fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var keys []model.ApplicationPrivateKey
 	if err := conn.Where("application_id = ?", appID).Limit(20).Order("id DESC").Find(&keys).Error; err != nil {
 		return nil, fmt.Errorf("failed to list application issuer keys: %w", err)
@@ -1313,8 +1365,14 @@ func (s *ApplicationService) CheckPasswordComplexity(ctx context.Context, passwo
 	}
 }
 
-func (s *ApplicationService) UpdateApplicationPassword(ctx context.Context, appID, userID, password string) error {
+func (s *ApplicationService) UpdateApplicationPassword(ctx context.Context, orgID, appID, userID, password string) error {
 	conn := db.Session(ctx)
+	// Verify application belongs to organization
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
 	var passwordHash []byte
 	if len(password) > 0 {
 		err := s.CheckPasswordComplexity(ctx, password)

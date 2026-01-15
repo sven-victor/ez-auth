@@ -39,10 +39,10 @@ export const getApplicationDisplayName = (application: API.Application | undefin
     return '';
   }
   if (application.display_name_i18n?.[lang]) {
-    return `${application.display_name_i18n[lang]} (${application.name})`
+    return `${application.display_name_i18n[lang]}`
   }
   if (application.display_name) {
-    return `${application.display_name} (${application.name})`
+    return `${application.display_name}`
   }
   return application.name
 }

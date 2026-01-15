@@ -483,6 +483,17 @@ func (c *UserController) GetLdapUsers(ctx *gin.Context) {
 }
 
 func (c *UserController) GetUserApplications(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     errors.New("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	id := ctx.Param("id")
 	if id == "" {
 		util.RespondWithError(ctx, util.ErrorResponse{
@@ -503,7 +514,7 @@ func (c *UserController) GetUserApplications(ctx *gin.Context) {
 	if pageSize < 1 {
 		pageSize = 10
 	}
-	applications, total, err := c.svc.GetUserApplications(ctx, id, keywords, status, page, pageSize)
+	applications, total, err := c.svc.GetUserApplications(ctx, orgID, id, keywords, status, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -536,7 +547,7 @@ func (c *UserController) GetMySelfApplications(ctx *gin.Context) {
 	if pageSize < 1 {
 		pageSize = 10
 	}
-	applications, total, err := c.svc.GetUserApplications(ctx, id, keywords, status, page, pageSize)
+	applications, total, err := c.svc.GetUserApplications(ctx, "", id, keywords, status, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -549,6 +560,17 @@ func (c *UserController) GetMySelfApplications(ctx *gin.Context) {
 }
 
 func (c *UserController) GetUserAssignableApplications(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     errors.New("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	id := ctx.Param("id")
 	if id == "" {
 		util.RespondWithError(ctx, util.ErrorResponse{
@@ -567,7 +589,7 @@ func (c *UserController) GetUserAssignableApplications(ctx *gin.Context) {
 	if pageSize < 1 {
 		pageSize = 10
 	}
-	applications, total, err := c.svc.GetUserAssignableApplications(ctx, id, keywords, page, pageSize)
+	applications, total, err := c.svc.GetUserAssignableApplications(ctx, orgID, id, keywords, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",

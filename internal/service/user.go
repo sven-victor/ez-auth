@@ -970,16 +970,20 @@ func (s *UserService) RestoreUser(ctx context.Context, userID string) error {
 	return nil
 }
 
-func (s *UserService) GetUserApplications(ctx context.Context, userID string, keywords, status string, page, pageSize int) ([]model.UserApplication, int64, error) {
+func (s *UserService) GetUserApplications(ctx context.Context, orgID, userID string, keywords, status string, page, pageSize int) ([]model.UserApplication, int64, error) {
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
 	query := dbConn.Model(&model.Application{}).
-		Select("t_application.*,t_application_user.role_id,t_application_role.name as role,t_application_user.password").
+		Select("t_application.*,t_application_user.role_id,t_application_role.name as role,t_application_user.password,t_organization.name as organization_name").
 		Joins("JOIN t_application_user ON t_application.resource_id = t_application_user.application_id and t_application_user.deleted_at is null").
 		Joins("LEFT JOIN t_application_role ON t_application_role.resource_id = t_application_user.role_id and t_application_role.deleted_at is null").
 		Joins("JOIN t_user ON t_user.resource_id = t_application_user.user_id and t_user.deleted_at is null").
+		Joins("JOIN t_organization ON t_organization.resource_id = t_application.organization_id and t_organization.deleted_at is null").
 		Where("t_user.resource_id = ?", userID).
 		Order("t_application.created_at desc")
+	if orgID != "" {
+		query = query.Where("t_application.organization_id = ?", orgID)
+	}
 	if keywords != "" {
 		query = query.Where("t_application.name LIKE ?", "%"+keywords+"%")
 	}
@@ -1003,11 +1007,11 @@ func (s *UserService) GetUserApplications(ctx context.Context, userID string, ke
 	return applications, total, nil
 }
 
-func (s *UserService) GetUserAssignableApplications(ctx context.Context, userID string, keywords string, page, pageSize int) ([]model.UserApplication, int64, error) {
+func (s *UserService) GetUserAssignableApplications(ctx context.Context, orgID, userID string, keywords string, page, pageSize int) ([]model.UserApplication, int64, error) {
 	dbConn := db.Session(ctx)
 	var applications []model.UserApplication
 	query := dbConn.Model(&model.Application{}).Joins("LEFT JOIN t_application_user ON t_application.resource_id = t_application_user.application_id AND t_application_user.deleted_at is null AND t_application_user.user_id = ?", userID).
-		Where("t_application_user.user_id IS NULL").
+		Where("t_application_user.user_id IS NULL AND t_application.organization_id = ?", orgID).
 		Order("t_application.created_at desc")
 	// fix:
 	if keywords != "" {

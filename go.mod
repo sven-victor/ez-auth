@@ -11,7 +11,7 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
-	github.com/sven-victor/ez-console v1.9.0
+	github.com/sven-victor/ez-console v1.9.1
 	github.com/sven-victor/ez-utils v1.0.1
 	github.com/swaggo/swag v1.16.4
 	github.com/tredoe/osutil v1.5.0

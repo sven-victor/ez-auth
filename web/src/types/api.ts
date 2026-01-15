@@ -171,6 +171,8 @@ namespace API {
     ldap_attrs?: LDAPAttrs[];
     force_independent_password?: boolean;
     has_password?: boolean;
+    organization_name?: string;
+    organization_id?: string;
   }
 
   export interface ApplicationUser {

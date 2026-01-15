@@ -72,6 +72,17 @@ func (c *ApplicationController) RegisterRoutes(ctx context.Context, router *gin.
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications [get]
 func (c *ApplicationController) ListApplications(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "10"))
 	keywords := ctx.DefaultQuery("keywords", "")
@@ -85,7 +96,7 @@ func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 		pageSize = 10
 	}
 
-	apps, total, err := c.svc.ListApplications(ctx, keywords, status, page, pageSize)
+	apps, total, err := c.svc.ListApplications(ctx, orgID, keywords, status, page, pageSize)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -109,6 +120,17 @@ func (c *ApplicationController) ListApplications(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications [post]
 func (c *ApplicationController) CreateApplication(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	var req model.Application
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -119,6 +141,9 @@ func (c *ApplicationController) CreateApplication(ctx *gin.Context) {
 		})
 		return
 	}
+
+	// Set organization ID
+	req.OrganizationID = orgID
 
 	if err := c.svc.CreateApplication(ctx, &req); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
@@ -143,8 +168,19 @@ func (c *ApplicationController) CreateApplication(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id} [get]
 func (c *ApplicationController) GetApplication(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
-	app, err := c.svc.GetApplication(ctx, appID)
+	app, err := c.svc.GetApplication(ctx, orgID, appID)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -186,6 +222,17 @@ type UpdateApplicationRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id} [put]
 func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	var req UpdateApplicationRequest
 
@@ -207,7 +254,7 @@ func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 			})
 			return
 		} else {
-			if err := c.svc.UpdateApplicationEntry(ctx, appID, *req.LDAPAttrs); err != nil {
+			if err := c.svc.UpdateApplicationEntry(ctx, orgID, appID, *req.LDAPAttrs); err != nil {
 				util.RespondWithError(ctx, util.ErrorResponse{
 					Code:    "E5001",
 					Err:     err,
@@ -218,7 +265,7 @@ func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 		}
 	}
 
-	if err := c.svc.UpdateApplication(ctx, &model.Application{
+	if err := c.svc.UpdateApplication(ctx, orgID, &model.Application{
 		Base: consolemodel.Base{
 			ResourceID: appID,
 		},
@@ -258,9 +305,20 @@ func (c *ApplicationController) UpdateApplication(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id} [delete]
 func (c *ApplicationController) DeleteApplication(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 
-	if err := c.svc.DeleteApplication(ctx, appID); err != nil {
+	if err := c.svc.DeleteApplication(ctx, orgID, appID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
 			Err:     err,
@@ -285,6 +343,17 @@ func (c *ApplicationController) DeleteApplication(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/roles [post]
 func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	var role model.ApplicationRole
 	if err := ctx.ShouldBindJSON(&role); err != nil {
@@ -298,7 +367,7 @@ func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
 		auditLog.ActionName = "Create application role"
 		role.ApplicationID = appID
-		if err := c.svc.CreateApplicationRole(ctx, &role); err != nil {
+		if err := c.svc.CreateApplicationRole(ctx, orgID, &role); err != nil {
 			return err
 		}
 		util.RespondWithSuccess(ctx, http.StatusCreated, role)
@@ -329,6 +398,17 @@ type UpdateApplicationRoleRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/roles/{roleId} [put]
 func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	roleID := ctx.Param("roleId")
 	var req UpdateApplicationRoleRequest
@@ -341,7 +421,7 @@ func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 		return
 	}
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
-		if err := c.svc.UpdateApplicationRole(ctx, appID, roleID, &model.ApplicationRole{
+		if err := c.svc.UpdateApplicationRole(ctx, orgID, appID, roleID, &model.ApplicationRole{
 			Name:        req.Name,
 			Description: req.Description,
 		}); err != nil {
@@ -368,8 +448,19 @@ func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/roles [get]
 func (c *ApplicationController) ListApplicationRoles(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
-	roles, err := c.svc.ListApplicationRoles(ctx, appID)
+	roles, err := c.svc.ListApplicationRoles(ctx, orgID, appID)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -393,10 +484,21 @@ func (c *ApplicationController) ListApplicationRoles(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/roles/{roleId} [delete]
 func (c *ApplicationController) DeleteApplicationRole(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	roleID := ctx.Param("roleId")
 
-	if err := c.svc.DeleteApplicationRole(ctx, appID, roleID); err != nil {
+	if err := c.svc.DeleteApplicationRole(ctx, orgID, appID, roleID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
 			Err:     err,
@@ -426,6 +528,17 @@ type AssignUserRoleRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/users [post]
 func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	var req AssignUserRoleRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -436,7 +549,7 @@ func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
 		})
 		return
 	}
-	if err := c.svc.AssignUserRole(ctx, appID, req.UserID, req.RoleID); err != nil {
+	if err := c.svc.AssignUserRole(ctx, orgID, appID, req.UserID, req.RoleID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
 			Err:     err,
@@ -461,10 +574,21 @@ func (c *ApplicationController) AssignUserRole(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/users/{userId} [delete]
 func (c *ApplicationController) UnassignUserRole(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	userID := ctx.Param("userId")
 
-	if err := c.svc.UnassignUserRole(ctx, appID, userID); err != nil {
+	if err := c.svc.UnassignUserRole(ctx, orgID, appID, userID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
 			Err:     err,
@@ -488,8 +612,19 @@ func (c *ApplicationController) UnassignUserRole(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/users [get]
 func (c *ApplicationController) ListApplicationUsers(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
-	users, err := c.svc.ListApplicationUsers(ctx, appID)
+	users, err := c.svc.ListApplicationUsers(ctx, orgID, appID)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			Code:    "E5001",
@@ -519,6 +654,16 @@ type ImportLDAPApplicationsRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/import [post]
 func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
 
 	type ImportLDAPApplicationsRequest struct {
 		ApplicationDN []string `json:"application_dn"`
@@ -533,7 +678,7 @@ func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 		return
 	}
 	if len(req.ApplicationDN) == 0 {
-		applications, err := c.svc.ImportLDAPApplications(ctx, req.ApplicationDN)
+		applications, err := c.svc.ImportLDAPApplications(ctx, orgID, req.ApplicationDN)
 		if err != nil {
 			util.RespondWithError(ctx, util.ErrorResponse{
 				HTTPCode: http.StatusInternalServerError,
@@ -546,7 +691,7 @@ func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 	} else {
 		err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
 			auditLog.ActionName = "Import LDAP Applications"
-			applications, err := c.svc.ImportLDAPApplications(ctx, req.ApplicationDN)
+			applications, err := c.svc.ImportLDAPApplications(ctx, orgID, req.ApplicationDN)
 			if err != nil {
 				util.RespondWithError(ctx, util.ErrorResponse{
 					HTTPCode: http.StatusInternalServerError,
@@ -581,6 +726,17 @@ type CreateApplicationKeyRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/keys [post]
 func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 
 	var req CreateApplicationKeyRequest
@@ -595,7 +751,7 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
 		auditLog.ActionName = "Create application key"
-		key, err := c.svc.CreateApplicationKey(ctx, appID, req.Name, req.ExpiresAt)
+		key, err := c.svc.CreateApplicationKey(ctx, orgID, appID, req.Name, req.ExpiresAt)
 		if err != nil {
 			return err
 		}
@@ -629,8 +785,19 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/keys [get]
 func (c *ApplicationController) ListApplicationKeys(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
-	keys, err := c.svc.ListApplicationKeys(ctx, appID)
+	keys, err := c.svc.ListApplicationKeys(ctx, orgID, appID)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			HTTPCode: http.StatusInternalServerError,
@@ -655,10 +822,21 @@ func (c *ApplicationController) ListApplicationKeys(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/keys/{keyId} [delete]
 func (c *ApplicationController) DeleteApplicationKey(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	keyID := ctx.Param("keyId")
 
-	if err := c.svc.DeleteApplicationKey(ctx, appID, keyID); err != nil {
+	if err := c.svc.DeleteApplicationKey(ctx, orgID, appID, keyID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			HTTPCode: http.StatusInternalServerError,
 			Code:     "E5001",
@@ -688,6 +866,17 @@ type CreateApplicationIssuerKeyRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/issuer-keys [post]
 func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 
 	var req CreateApplicationIssuerKeyRequest
@@ -701,7 +890,7 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 	}
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
-		key, err := c.svc.CreateApplicationIssuerKey(ctx, appID, req.Name, req.Algorithm, req.PrivateKey)
+		key, err := c.svc.CreateApplicationIssuerKey(ctx, orgID, appID, req.Name, req.Algorithm, req.PrivateKey)
 		if err != nil {
 			return err
 		}
@@ -727,8 +916,19 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/issuer-keys [get]
 func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
-	keys, err := c.svc.ListApplicationIssuerKeys(ctx, appID)
+	keys, err := c.svc.ListApplicationIssuerKeys(ctx, orgID, appID)
 	if err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			HTTPCode: http.StatusInternalServerError,
@@ -753,10 +953,21 @@ func (c *ApplicationController) ListApplicationIssuerKeys(ctx *gin.Context) {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/issuer-keys/{issuerKeyId} [delete]
 func (c *ApplicationController) DeleteApplicationIssuerKey(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 	issuerKeyID := ctx.Param("issuerKeyId")
 
-	if err := c.svc.DeleteApplicationIssuerKey(ctx, appID, issuerKeyID); err != nil {
+	if err := c.svc.DeleteApplicationIssuerKey(ctx, orgID, appID, issuerKeyID); err != nil {
 		util.RespondWithError(ctx, util.ErrorResponse{
 			HTTPCode: http.StatusInternalServerError,
 			Code:     "E5001",
@@ -784,6 +995,17 @@ type UpdateApplicationPasswordRequest struct {
 // @Failure 500 {object} util.ErrorResponse
 // @Router /api/applications/{id}/password [post]
 func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
+	// Get organization ID from context
+	orgID := ctx.GetString("organization_id")
+	if orgID == "" {
+		util.RespondWithError(ctx, util.ErrorResponse{
+			Code:    "E4001",
+			Err:     fmt.Errorf("organization ID required"),
+			Message: "organization ID required",
+		})
+		return
+	}
+
 	appID := ctx.Param("id")
 
 	var req UpdateApplicationPasswordRequest
@@ -799,7 +1021,7 @@ func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
 		auditLog.ActionName = "Update application password"
-		err := c.svc.UpdateApplicationPassword(ctx, appID, userID, req.Password)
+		err := c.svc.UpdateApplicationPassword(ctx, orgID, appID, userID, req.Password)
 		if err != nil {
 			return err
 		}
@@ -821,94 +1043,112 @@ func init() {
 
 	middleware.RegisterPermission("Application Management", "Manage application creation, editing, deletion, and role assignment", []consolemodel.Permission{
 		{
-			Code:        "applications:list",
-			Name:        "List applications",
-			Description: "List applications",
+			Code:          "applications:list",
+			Name:          "List applications",
+			Description:   "List applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:view",
-			Name:        "View applications",
-			Description: "View applications details",
+			Code:          "applications:view",
+			Name:          "View applications",
+			Description:   "View applications details",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:create",
-			Name:        "Create applications",
-			Description: "Create new applications",
+			Code:          "applications:create",
+			Name:          "Create applications",
+			Description:   "Create new applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:update",
-			Name:        "Update applications",
-			Description: "Update existing applications",
+			Code:          "applications:update",
+			Name:          "Update applications",
+			Description:   "Update existing applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:delete",
-			Name:        "Delete applications",
-			Description: "Delete applications",
+			Code:          "applications:delete",
+			Name:          "Delete applications",
+			Description:   "Delete applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:roles:view",
-			Name:        "View application roles",
-			Description: "View application roles",
+			Code:          "applications:roles:view",
+			Name:          "View application roles",
+			Description:   "View application roles",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:roles:create",
-			Name:        "Create application roles",
-			Description: "Create application roles",
+			Code:          "applications:roles:create",
+			Name:          "Create application roles",
+			Description:   "Create application roles",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:roles:update",
-			Name:        "Update application roles",
-			Description: "Update application roles",
+			Code:          "applications:roles:update",
+			Name:          "Update application roles",
+			Description:   "Update application roles",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:roles:delete",
-			Name:        "Delete application roles",
-			Description: "Delete application roles",
+			Code:          "applications:roles:delete",
+			Name:          "Delete application roles",
+			Description:   "Delete application roles",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:users:assign",
-			Name:        "Assign users to applications",
-			Description: "Assign users to applications",
+			Code:          "applications:users:assign",
+			Name:          "Assign users to applications",
+			Description:   "Assign users to applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:users:unassign",
-			Name:        "Unassign users from applications",
-			Description: "Unassign users from applications",
+			Code:          "applications:users:unassign",
+			Name:          "Unassign users from applications",
+			Description:   "Unassign users from applications",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:users:view",
-			Name:        "View application users",
-			Description: "View application users",
+			Code:          "applications:users:view",
+			Name:          "View application users",
+			Description:   "View application users",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:keys:view",
-			Name:        "View application keys",
-			Description: "View application keys",
+			Code:          "applications:keys:view",
+			Name:          "View application keys",
+			Description:   "View application keys",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:keys:create",
-			Name:        "Create application keys",
-			Description: "Create new application keys",
+			Code:          "applications:keys:create",
+			Name:          "Create application keys",
+			Description:   "Create new application keys",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:keys:delete",
-			Name:        "Delete application keys",
-			Description: "Delete application keys",
+			Code:          "applications:keys:delete",
+			Name:          "Delete application keys",
+			Description:   "Delete application keys",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:issuer-keys:view",
-			Name:        "View application issuer keys",
-			Description: "View application issuer keys",
+			Code:          "applications:issuer-keys:view",
+			Name:          "View application issuer keys",
+			Description:   "View application issuer keys",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:issuer-keys:create",
-			Name:        "Create application issuer keys",
-			Description: "Create new application issuer keys",
+			Code:          "applications:issuer-keys:create",
+			Name:          "Create application issuer keys",
+			Description:   "Create new application issuer keys",
+			OrgPermission: true,
 		},
 		{
-			Code:        "applications:issuer-keys:delete",
-			Name:        "Delete application issuer keys",
-			Description: "Delete application issuer keys",
+			Code:          "applications:issuer-keys:delete",
+			Name:          "Delete application issuer keys",
+			Description:   "Delete application issuer keys",
+			OrgPermission: true,
 		},
 	})
 }

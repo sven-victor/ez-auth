@@ -156,15 +156,17 @@ const Home: React.FC = () => {
     switch (listType) {
       case 'list':
         return (
-          <List.Item actions={[<Actions key="actions" actions={[{
-            key: 'changePassword',
-            icon: <KeyOutlined />,
-            hidden: !isPasswordGrant,
-            type: 'link',
-            onClick: async () => {
-              return await handleChangePassword(item)
-            }
-          }]} />]}>
+          <List.Item
+            extra={siteConfig?.enable_multi_org && <Tag color="blue">{item.organization_name}</Tag>}
+            actions={[<Actions key="actions" actions={[{
+              key: 'changePassword',
+              icon: <KeyOutlined />,
+              hidden: !isPasswordGrant,
+              type: 'link',
+              onClick: async () => {
+                return await handleChangePassword(item)
+              }
+            }]} />]}>
             <List.Item.Meta
               avatar={<Avatar src={item.icon} fallback={<AppstoreOutlined />} />}
               title={<Text style={{ fontSize: 16 }} >{title}</Text>}
@@ -186,7 +188,10 @@ const Home: React.FC = () => {
             >
               <Card.Meta
                 avatar={<Avatar src={item.icon} fallback={<AppstoreOutlined />} />}
-                title={<Text style={{ fontSize: 16 }} ellipsis={{ tooltip: true }}>{title}</Text>}
+                title={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16 }} ellipsis={{ tooltip: true }}>{title}</Text>
+                  {siteConfig?.enable_multi_org && <Tag color="blue">{item.organization_name}</Tag>}
+                </div>}
                 description={<Paragraph
                   style={{ height: 44 }}
                   ellipsis={{ rows: 2, tooltip: true }}

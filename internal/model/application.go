@@ -54,7 +54,8 @@ type Application struct {
 	Users           []User            `gorm:"-" json:"users,omitempty"`
 	LDAPAttrs       []LDAPAttr        `gorm:"-" json:"ldap_attrs,omitempty"`
 
-	ForceIndependentPassword bool `gorm:"type:tinyint(1);not null;default:0" json:"force_independent_password"`
+	ForceIndependentPassword bool   `gorm:"type:tinyint(1);not null;default:0" json:"force_independent_password"`
+	OrganizationID           string `gorm:"type:varchar(36);index;default:'00000000000000000000000000000000'" json:"organization_id,omitempty"`
 }
 
 func (a *Application) CheckRedirectURI(uri string) bool {
@@ -88,6 +89,8 @@ type UserApplication struct {
 	ForceIndependentPassword bool              `gorm:"type:tinyint(1);not null;default:0" json:"force_independent_password"`
 	Password                 string            `gorm:"type:varchar(255)" json:"-"`
 	HasPassword              *bool             `gorm:"-" json:"has_password,omitempty"`
+	OrganizationID           string            `gorm:"type:varchar(36);index;default:'00000000000000000000000000000000'" json:"organization_id,omitempty"`
+	OrganizationName         string            `gorm:"type:varchar(100)" json:"organization_name"`
 }
 
 type ApplicationPrivateKey struct {

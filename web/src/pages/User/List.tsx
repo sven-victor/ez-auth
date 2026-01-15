@@ -159,15 +159,15 @@ const UserList: React.FC = () => {
   };
 
   // Unlock user
-  const handleUnlock = (id: string) => {
+  const handleUnlock = (user: API.User) => {
     Modal.confirm({
       title: t('user.unlockTitle', { defaultValue: 'Unlock User' }),
-      content: t('user.unlockConfirm', { defaultValue: 'Are you sure you want to unlock this user?' }),
+      content: t('user.unlockConfirm', { defaultValue: 'Are you sure you want to unlock this user?', username: user.username }),
       okText: tCommon('confirm', { defaultValue: 'Confirm' }),
       cancelText: tCommon('cancel', { defaultValue: 'Cancel' }),
       onOk: async () => {
         try {
-          await unlockUser(id);
+          await unlockUser(user.id);
           message.success(t('user.unlockSuccess', { defaultValue: 'User unlocked successfully' }));
           tableRef.current?.reload()
         } catch (error) {
@@ -343,7 +343,7 @@ const UserList: React.FC = () => {
           icon: <UnlockOutlined />,
           tooltip: t('unlock', { defaultValue: 'Unlock' }),
           hidden: record.status !== 'locked',
-          onClick: async () => handleUnlock(record.id),
+          onClick: async () => handleUnlock(record),
         }, {
           key: "resetPassword",
           permission: "authorization:user:resetPassword",
@@ -365,7 +365,7 @@ const UserList: React.FC = () => {
           tooltip: t('restore', { defaultValue: 'Restore' }),
           hidden: record.status !== 'deleted',
           confirm: {
-            title: t('restoreConfirm', { defaultValue: 'Are you sure you want to restore this user?' }),
+            title: t('restoreConfirm', { defaultValue: 'Are you sure you want to restore this user?', username: record.username }),
             onConfirm: async () => await handleRestore(record.id),
           }
         }, {
