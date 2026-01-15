@@ -6,14 +6,21 @@ import { useRequest } from 'ahooks';
 import { getMySelfApplications } from '@/api/user';
 import { updateApplicationPassword } from '@/api/application';
 import { getApplicationDescription, getApplicationDisplayName } from '@/utils';
-import { AppstoreOutlined, KeyOutlined, ProductOutlined, ReloadOutlined, SearchOutlined, SwapOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, KeyOutlined, MoonOutlined, ProductOutlined, ReloadOutlined, SearchOutlined, SunOutlined, SwapOutlined, UnorderedListOutlined, UserOutlined } from '@ant-design/icons';
 import { Content, Header } from 'antd/es/layout/layout';
 import { Link } from 'react-router-dom';
+import classNames from 'classnames';
+import { createStyles, useThemeMode } from 'antd-style';
 
-import { createStyles } from 'antd-style';
-
-const useStyles = createStyles(({ token }) => {
+const useStyles = createStyles(({ css, token }) => {
   return {
+    header: css`
+      padding: 0;
+      display: flex;
+      justify-content: space-between;
+      background-color: ${token.colorBgContainer};
+      border-block-end: 1px solid ${token.colorBorderSecondary};
+    `,
     iconStyle: {
       cursor: "pointer",
       padding: "12px",
@@ -41,6 +48,7 @@ const Home: React.FC = () => {
   const { t: tCommon } = useTranslation('common');
   const { t: tApplications } = useTranslation('applications');
   const { logout, user, loading: userLoading } = useAuth();
+  const { themeMode, setThemeMode } = useThemeMode();
 
   const [navigation, setNavigation] = useState<API.Navigation[]>([]);
 
@@ -204,7 +212,7 @@ const Home: React.FC = () => {
   }
 
   return <Layout style={{ minHeight: '100vh' }} className="site-layout">
-    <Header className="site-layout-background" style={{ padding: 0, display: 'flex', justifyContent: 'space-between' }}>
+    <Header className={classNames("site-header", styles.header)} style={{ padding: 0, display: 'flex', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginLeft: '20px' }} >
         <Avatar src={siteConfig?.logo || '/logo.png'} />
         <div style={{ marginLeft: '10px' }}>
@@ -214,7 +222,7 @@ const Home: React.FC = () => {
       <div style={{ marginRight: '20px' }}>
         <PermissionGuard permission="applications:list">
           <Link to="/applications" className={styles.iconStyle}  >
-            <AppstoreOutlined />
+            <ProductOutlined />
           </Link>
         </PermissionGuard>
         <HeaderDropdown
@@ -233,7 +241,22 @@ const Home: React.FC = () => {
           {user?.avatar ? <Avatar src={user.avatar} /> : <Avatar icon={<UserOutlined />} />}
           <span style={{ height: '1em', lineHeight: '1em' }}>{user?.full_name || user?.username}</span>
         </HeaderDropdown>
-        <LanguageSwitch />
+        <LanguageSwitch />,
+        <HeaderDropdown
+          key="theme-switch"
+          menu={{
+            items: [
+              { key: 'light', label: <span><SunOutlined /> {tCommon('light', { defaultValue: 'Light Mode' })}</span> },
+              { key: 'dark', label: <span><MoonOutlined /> {tCommon('dark', { defaultValue: 'Dark Mode' })}</span> }
+            ],
+            onClick: ({ key }) => {
+              setThemeMode(key as 'light' | 'dark')
+            },
+            selectedKeys: [themeMode],
+          }}
+        >
+          {themeMode === 'light' ? <SunOutlined /> : <MoonOutlined />}
+        </HeaderDropdown>
       </div>
     </Header>
     <Content style={{ margin: '16px' }}>
@@ -249,7 +272,7 @@ const Home: React.FC = () => {
               runGetApplications(search, data?.current || 1, data?.page_size || 30)
             }} />
             <Radio.Group value={listType} onChange={(e) => setListType(e.target.value)}>
-              <Radio.Button value="card"><ProductOutlined /></Radio.Button>
+              <Radio.Button value="card"><AppstoreOutlined /></Radio.Button>
               <Radio.Button value="list"><UnorderedListOutlined /></Radio.Button>
             </Radio.Group>
           </Space>
