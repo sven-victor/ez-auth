@@ -82,7 +82,6 @@ export default {
       importStatus: 'Import Status',
       importTypeBound: 'Bound',
       importTypeNew: 'New',
-      applicationBaseDnRequired: 'Please enter the application base DN',
       applicationFilterRequired: 'Please enter the application filter',
     },
   },
