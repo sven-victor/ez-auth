@@ -21,7 +21,7 @@ internal/server/static: web/node_modules
 
 dist/server:
 	go mod tidy
-	go build -o dist/server main.go
+	go build -ldflags "-s -w" -o dist/server main.go
 
 clean:
 	rm -rf dist/server
