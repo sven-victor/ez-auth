@@ -361,6 +361,11 @@ func (c *UserController) ResetPassword(ctx *gin.Context) {
 	}
 	newPassword := util.GenerateRandomPassword(12)
 	err := c.svc.StartAudit(ctx, userID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "users:password:reset"
+		auditLog.ActionName = "Reset Password"
+		auditLog.Details.Request = map[string]any{
+			"user_id": userID,
+		}
 		sendEmail, err := c.svc.ResetPassword(ctx, userID, newPassword)
 		if err != nil {
 			return util.ErrorResponse{
@@ -423,7 +428,11 @@ func (c *UserController) ImportLDAPUsers(ctx *gin.Context) {
 		util.RespondWithSuccess(ctx, http.StatusOK, users)
 	} else {
 		err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
+			auditLog.Action = "users:import:ldap"
 			auditLog.ActionName = "Import LDAP Users"
+			auditLog.Details.Request = map[string]any{
+				"user_dn": req.UserDN,
+			}
 			users, err := c.svc.ImportLDAPUsers(ctx, req.UserDN)
 			if err != nil {
 				return util.ErrorResponse{
@@ -465,6 +474,11 @@ func (c *UserController) RestoreUser(ctx *gin.Context) {
 		ctx,
 		id,
 		func(auditLog *consolemodel.AuditLog) error {
+			auditLog.Action = "users:restore"
+			auditLog.ActionName = "Restore User"
+			auditLog.Details.Request = map[string]any{
+				"user_id": id,
+			}
 			err := c.svc.RestoreUser(ctx, id)
 			if err != nil {
 				return err

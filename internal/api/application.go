@@ -379,7 +379,12 @@ func (c *ApplicationController) CreateApplicationRole(ctx *gin.Context) {
 		return
 	}
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "applications:roles:create"
 		auditLog.ActionName = "Create application role"
+		auditLog.Details.Request = map[string]any{
+			"name":        role.Name,
+			"description": role.Description,
+		}
 		role.ApplicationID = appID
 		if err := c.svc.CreateApplicationRole(ctx, orgID, &role); err != nil {
 			return err
@@ -435,6 +440,13 @@ func (c *ApplicationController) UpdateApplicationRole(ctx *gin.Context) {
 		return
 	}
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "applications:roles:update"
+		auditLog.ActionName = "Update application role"
+		auditLog.Details.Request = map[string]any{
+			"role_id":     roleID,
+			"name":        req.Name,
+			"description": req.Description,
+		}
 		if err := c.svc.UpdateApplicationRole(ctx, orgID, appID, roleID, &model.ApplicationRole{
 			Name:        req.Name,
 			Description: req.Description,
@@ -704,7 +716,11 @@ func (c *ApplicationController) ImportLDAPApplications(ctx *gin.Context) {
 		util.RespondWithSuccess(ctx, http.StatusOK, applications)
 	} else {
 		err := c.svc.StartAudit(ctx, "", func(auditLog *consolemodel.AuditLog) error {
+			auditLog.Action = "applications:import:ldap"
 			auditLog.ActionName = "Import LDAP Applications"
+			auditLog.Details.Request = map[string]any{
+				"application_dn": req.ApplicationDN,
+			}
 			applications, err := c.svc.ImportLDAPApplications(ctx, orgID, req.ApplicationDN)
 			if err != nil {
 				util.RespondWithError(ctx, util.ErrorResponse{
@@ -764,7 +780,12 @@ func (c *ApplicationController) CreateApplicationKey(ctx *gin.Context) {
 	}
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "applications:keys:create"
 		auditLog.ActionName = "Create application key"
+		auditLog.Details.Request = map[string]any{
+			"name":       req.Name,
+			"expires_at": req.ExpiresAt,
+		}
 		key, err := c.svc.CreateApplicationKey(ctx, orgID, appID, req.Name, req.ExpiresAt)
 		if err != nil {
 			return err
@@ -904,6 +925,20 @@ func (c *ApplicationController) CreateApplicationIssuerKey(ctx *gin.Context) {
 	}
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "applications:issuer-keys:create"
+		auditLog.ActionName = "Create application issuer key"
+		if req.PrivateKey != "" {
+			auditLog.Details.Request = map[string]any{
+				"name":        req.Name,
+				"algorithm":   req.Algorithm,
+				"private_key": "********",
+			}
+		} else {
+			auditLog.Details.Request = map[string]any{
+				"name":      req.Name,
+				"algorithm": req.Algorithm,
+			}
+		}
 		key, err := c.svc.CreateApplicationIssuerKey(ctx, orgID, appID, req.Name, req.Algorithm, req.PrivateKey)
 		if err != nil {
 			return err
@@ -1034,7 +1069,11 @@ func (c *ApplicationController) UpdateApplicationPassword(ctx *gin.Context) {
 	userID := middleware.GetUserIDFromContext(ctx)
 
 	err := c.svc.StartAudit(ctx, appID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "applications:password:update"
 		auditLog.ActionName = "Update application password"
+		auditLog.Details.Request = map[string]any{
+			"password": "********",
+		}
 		err := c.svc.UpdateApplicationPassword(ctx, orgID, appID, userID, req.Password)
 		if err != nil {
 			return err

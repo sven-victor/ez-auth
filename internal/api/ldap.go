@@ -25,6 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sven-victor/ez-auth/internal/model"
 	clientsldap "github.com/sven-victor/ez-console/pkg/clients/ldap"
+	"github.com/sven-victor/ez-console/pkg/middleware"
 	consolemodel "github.com/sven-victor/ez-console/pkg/model"
 	"github.com/sven-victor/ez-console/pkg/util"
 	"github.com/sven-victor/ez-console/server"
@@ -56,8 +57,8 @@ func init() {
 // @Router /api/ldap [get]
 func (c *LDAPController) RegisterRoutes(ctx context.Context, router *gin.RouterGroup) {
 	ldap := router.Group("/ldap")
-	ldap.GET("/settings", c.GetLDAPSettings)
-	ldap.POST("/settings", c.UpdateLDAPSettings)
+	ldap.GET("/settings", middleware.RequirePermission("system:settings:view"), c.GetLDAPSettings)
+	ldap.POST("/settings", middleware.RequirePermission("system:settings:update"), c.UpdateLDAPSettings)
 	ldap.POST("/test", c.TestLDAPConnection)
 }
 
@@ -187,8 +188,8 @@ func (c *LDAPController) UpdateLDAPSettings(ctx *gin.Context) {
 		ctx,
 		"",
 		func(auditLog *consolemodel.AuditLog) error {
-			auditLog.Action = "Update LDAP Settings"
-			auditLog.Details.Request = req
+			auditLog.Action = "system:settings:update"
+			auditLog.ActionName = "Update LDAP Settings"
 			return c.svc.UpdateSettings(ctx, settingsMap)
 		},
 	)

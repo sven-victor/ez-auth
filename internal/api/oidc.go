@@ -253,6 +253,14 @@ func (c *OIDCController) Authorize(ctx *gin.Context) {
 	oidcUserInfo := oidcUser.GetByScope(scopeList)
 	oidcUserInfo["aud"] = []string{clientID}
 	err = c.svc.StartAudit(ctx, app.ResourceID, func(auditLog *consolemodel.AuditLog) error {
+		auditLog.Action = "oidc:authorize"
+		auditLog.ActionName = "Authorize"
+		auditLog.Details.Request = map[string]any{
+			"client_id":     clientID,
+			"redirect_uri":  redirectURI.String(),
+			"response_type": responseType,
+			"scope":         scopeList,
+		}
 		for _, rt := range strings.Split(responseType, " ") {
 			switch rt {
 			case "none", "code":
