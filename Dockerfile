@@ -34,7 +34,7 @@ RUN --mount=type=cache,id=homecache,target=/root/.cache/ if [ ! -f /root/.cache/
        cp /root/.cache/GeoLite2-City.mmdb /app/GeoLite2-City.mmdb;  \
     fi
 RUN --mount=type=cache,id=go-pkg,target=/go/pkg go mod download
-RUN --mount=type=cache,id=go-pkg,target=/go/pkg --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build go build -o ez-auth main.go
+RUN --mount=type=cache,id=go-pkg,target=/go/pkg --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build go build -tags=ignore_console_static -ldflags "-s -w" -o ez-auth main.go
 
 FROM alpine:3.22
 WORKDIR /opt/ez-auth
