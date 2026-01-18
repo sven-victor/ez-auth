@@ -45,7 +45,7 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   build: {
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
     outDir: 'dist',
     rollupOptions: {
       treeshake: true,
