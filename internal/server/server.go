@@ -17,12 +17,11 @@ package server
 import (
 	"embed"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	w "github.com/sven-victor/ez-utils/wrapper"
-
-	"github.com/sven-victor/ez-console/server"
 )
 
 // embed static files
@@ -33,18 +32,25 @@ var staticFs embed.FS
 //go:embed static/index.html
 var indexHtml []byte
 
+var upTime = time.Now().UTC().Truncate(time.Second)
+
 func IndexHandler(c *gin.Context) {
 	c.Writer.Header().Del("Last-Modified")
 	c.Writer.Header().Del("Cache-Control")
 	c.Data(http.StatusOK, "text/html", indexHtml)
 	c.Abort()
 }
+func CacheControl(c *gin.Context) {
+	c.Writer.Header().Set("Last-Modified", upTime.Format(http.TimeFormat))
+	c.Writer.Header().Set("Cache-Control", "max-age=3600")
+	c.Next()
+}
 
 func RegisterStaticFiles(engine *gin.Engine) {
 	embedFs := w.M(static.EmbedFolder(staticFs, "static"))
 	staticHandler := static.ServeFileSystem(embedFs)
-	engine.GET("/ui/*filepath", server.CacheControl, static.Serve("/ui", staticHandler), IndexHandler)
-	engine.HEAD("/ui/*filepath", server.CacheControl, static.Serve("/ui", staticHandler), IndexHandler)
+	engine.NoRoute(CacheControl, static.Serve("", staticHandler), IndexHandler)
+
 	engine.Any("/logo.png", func(c *gin.Context) {
 		c.FileFromFS("/logo.png", staticHandler)
 	})
