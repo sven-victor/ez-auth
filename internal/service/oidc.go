@@ -580,7 +580,7 @@ func (s *OIDCService) GetOpenIDConfiguration(ctx *gin.Context, clientID string) 
 
 	return &model.OpenIDConfiguration{
 		Issuer:                           rootURL,
-		AuthorizationEndpoint:            rootURL + "/ui/oidc/authorize",
+		AuthorizationEndpoint:            rootURL + "/oidc/authorize",
 		TokenEndpoint:                    rootURL + "/api/oauth2/token",
 		UserinfoEndpoint:                 rootURL + "/api/oauth2/userinfo",
 		JWKSURI:                          jwksURI,

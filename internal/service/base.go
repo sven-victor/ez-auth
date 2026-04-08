@@ -28,9 +28,9 @@ import (
 )
 
 func init() {
-	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemHomePage, "/ui/", "System home page")
+	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemHomePage, "/", "System home page")
 	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemName, "EZ-Auth", "System name")
-	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemLogo, "/ui/logo.png", "System logo")
+	consoleservice.RegisterDefaultSettings(context.Background(), consolemodel.SettingSystemLogo, "/logo.png", "System logo")
 	consoleservice.FilterNavigation(func(nvs []consoleservice.Navigation) []consoleservice.Navigation {
 		return []consoleservice.Navigation{
 			{
