@@ -93,12 +93,12 @@ type OIDCApplicationUser struct {
 
 func (s *OIDCService) VerifyApplicationPassword(ctx context.Context, appID, username, password string) (*model.OIDCUserInfo, error) {
 	var user OIDCApplicationUser
-	if err := db.Session(ctx).Select("t_user.*,t_application_user.role_id,t_application_role.name as role,t_application_user.password as application_password,t_application.grant_types,t_application.force_independent_password").Model(&model.ApplicationUser{}).
+	if err := db.Session(ctx).Select("t_user.*,t_application_role.resource_id as role_id,t_application_role.name as role,t_application_user.password as application_password,t_application.grant_types,t_application.force_independent_password").Model(&model.ApplicationUser{}).
 		Joins("join t_user on t_application_user.user_id = t_user.resource_id").
-		Joins("left join t_application_role on t_application_user.role_id = t_application_role.resource_id").
+		Joins("left join t_application_role on t_application_user.role_id = t_application_role.resource_id AND t_application_role.deleted_at IS NULL").
 		Joins("left join t_application on t_application_user.application_id = t_application.resource_id").
 		Where("t_application_user.application_id = ? and t_user.username = ?", appID, username).
-		Where("t_application_user.deleted_at is null and t_user.deleted_at is null and t_application_role.deleted_at is null").
+		Where("t_application_user.deleted_at is null and t_user.deleted_at is null").
 		First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, util.NewErrorMessage("E4039", "Unauthorized application")
@@ -166,8 +166,8 @@ func (s *OIDCService) Authorize(ctx context.Context, clientID string, user *mode
 	if err := db.Session(ctx).Model(&model.Application{}).
 		Select("t_application.*, t_application_role.name as role, t_application_role.resource_id as role_id").
 		Joins("join t_application_key on t_application.resource_id = t_application_key.application_id").
-		Joins("left join t_application_user on t_application.resource_id = t_application_user.application_id and t_application_user.user_id = ?", user.Sub).
-		Joins("left join t_application_role on t_application.resource_id = t_application_role.application_id  and t_application_user.role_id = t_application_role.resource_id").
+		Joins("left join t_application_user on t_application.resource_id = t_application_user.application_id and t_application_user.user_id = ? and t_application_user.deleted_at IS NULL", user.Sub).
+		Joins("left join t_application_role on t_application.resource_id = t_application_role.application_id and t_application_user.role_id = t_application_role.resource_id AND t_application_role.deleted_at IS NULL").
 		Where("t_application_key.client_id = ? and t_application.status = ? and t_application.deleted_at is null", clientID, "active").
 		Find(&app).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -262,9 +262,9 @@ func (s *OIDCService) GetUserInfo(ctx context.Context, sessionID string, appID s
 	}
 
 	var user model.User
-	query := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_user.role_id").Model(&model.User{}).
-		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ?", appID).
-		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ?", appID).
+	query := db.Session(ctx).Select("t_user.*,t_application_role.name as role,t_application_role.resource_id as role_id").Model(&model.User{}).
+		Joins("LEFT JOIN t_application_user on t_user.resource_id = t_application_user.user_id and t_application_user.application_id = ? and t_application_user.deleted_at IS NULL", appID).
+		Joins("LEFT JOIN t_application_role on t_application_role.resource_id = t_application_user.role_id and t_application_role.application_id = ? AND t_application_role.deleted_at IS NULL", appID).
 		Joins("JOIN t_application on t_application.resource_id = t_application_user.application_id").
 		Where("t_application.status = ? and t_application.deleted_at is null", "active")
 

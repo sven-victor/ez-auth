@@ -344,8 +344,8 @@ func (s *ApplicationService) GetApplication(ctx context.Context, orgID, appID st
 	if err := dbConn.Unscoped().Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
 		return nil, fmt.Errorf("failed to find application: %w", err)
 	}
-	// Get application roles
-	if err := dbConn.Unscoped().Where("application_id = ?", appID).Find(&app.Roles).Error; err != nil {
+	// Get application roles (exclude soft-deleted roles; Unscoped on app only applies to the application row)
+	if err := dbConn.Where("application_id = ?", appID).Find(&app.Roles).Error; err != nil {
 		return nil, fmt.Errorf("failed to get application roles: %w", err)
 	}
 	if app.DeletedAt.Valid {
@@ -608,10 +608,26 @@ func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, orgID, a
 		return fmt.Errorf("failed to find application: %w", err)
 	}
 
-	if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).Delete(&model.ApplicationRole{}).Error; err != nil {
-		return fmt.Errorf("failed to delete application role: %w", err)
+	var role model.ApplicationRole
+	if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).First(&role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("application role not found")
+		}
+		return fmt.Errorf("failed to find application role: %w", err)
 	}
-	return nil
+
+	return conn.Transaction(func(tx *gorm.DB) error {
+		// Clear assignments so OIDC and joins that require an active role row keep working
+		if err := tx.Model(&model.ApplicationUser{}).
+			Where("application_id = ? AND role_id = ?", appID, roleID).
+			Update("role_id", "").Error; err != nil {
+			return fmt.Errorf("failed to clear role from user assignments: %w", err)
+		}
+		if err := tx.Delete(&role).Error; err != nil {
+			return fmt.Errorf("failed to delete application role: %w", err)
+		}
+		return nil
+	})
 }
 
 // AssignUserRole assigns a role to a user, writing the association to the database and adding the member info to the application's LDAP entry
