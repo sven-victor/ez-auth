@@ -630,9 +630,42 @@ func (s *ApplicationService) DeleteApplicationRole(ctx context.Context, orgID, a
 	})
 }
 
-// AssignUserRole assigns a role to a user, writing the association to the database and adding the member info to the application's LDAP entry
+// AssignUserRole assigns a role to a user: for local applications it only persists t_application_user;
+// for LDAP applications it also adds the user's LDAP DN to the application's LDAP group entry.
 func (s *ApplicationService) AssignUserRole(ctx context.Context, orgID, appID, userID, roleID string) error {
 	logger := log.GetContextLogger(ctx)
+	conn := db.Session(ctx)
+	var user model.User
+	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
+		return fmt.Errorf("failed to find user: %w", err)
+	}
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+	if len(roleID) != 0 {
+		var role model.ApplicationRole
+		if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).First(&role).Error; err != nil {
+			return fmt.Errorf("failed to find role: %w", err)
+		}
+	}
+
+	if app.Source == "local" {
+		userRole := model.ApplicationUser{
+			ApplicationID: appID,
+			UserID:        userID,
+			RoleID:        roleID,
+		}
+		if err := conn.Create(&userRole).Error; err != nil {
+			return fmt.Errorf("failed to create user role: %w", err)
+		}
+		return nil
+	}
+
+	if user.LDAPDN == "" {
+		return fmt.Errorf("LDAP user required for LDAP application")
+	}
+
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
@@ -643,25 +676,6 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, orgID, appID, u
 		return fmt.Errorf("failed to get LDAP application object class: %w", err)
 	}
 
-	conn := db.Session(ctx)
-	// Get user information
-	var user model.User
-	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
-		return fmt.Errorf("failed to find user: %w", err)
-	}
-	// Get application information and verify it belongs to organization
-	var app model.Application
-	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
-		return fmt.Errorf("failed to find application: %w", err)
-	}
-	// if roleID is not empty, check if the role exists
-	if len(roleID) != 0 {
-		// Get role information
-		var role model.ApplicationRole
-		if err := conn.Where("application_id = ? AND resource_id = ?", appID, roleID).First(&role).Error; err != nil {
-			return fmt.Errorf("failed to find role: %w", err)
-		}
-	}
 	// Get application info from LDAP, if member contains user.LDAPDN, do not modify LDAP entry
 	modifyRequest := (*ldap.ModifyRequest)(nil)
 	addRequest := (*ldap.AddRequest)(nil)
@@ -775,26 +789,32 @@ func (s *ApplicationService) AssignUserRole(ctx context.Context, orgID, appID, u
 	})
 }
 
-// UnassignUserRole unassigns a role from a user, removes the association from the database, and deletes the member info from the application's LDAP entry
+// UnassignUserRole removes a user's application assignment: for local applications only the database row
+// is removed; for LDAP applications the user's DN is also removed from the application's LDAP group entry.
 func (s *ApplicationService) UnassignUserRole(ctx context.Context, orgID, appID, userID string) error {
 	logger := log.GetContextLogger(ctx)
+	conn := db.Session(ctx)
+	var user model.User
+	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
+		return fmt.Errorf("failed to find user: %w", err)
+	}
+	var app model.Application
+	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
+		return fmt.Errorf("failed to find application: %w", err)
+	}
+
+	if app.Source == "local" {
+		if err := conn.Where("application_id = ? AND user_id = ?", appID, userID).Unscoped().Delete(&model.ApplicationUser{}).Error; err != nil {
+			return fmt.Errorf("failed to delete user role: %w", err)
+		}
+		return nil
+	}
+
 	ldapSession, err := s.Service.GetLDAPSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get LDAP session: %w", err)
 	}
 	defer ldapSession.Close()
-
-	conn := db.Session(ctx)
-	// Get user information
-	var user model.User
-	if err := conn.Where("resource_id = ?", userID).First(&user).Error; err != nil {
-		return fmt.Errorf("failed to find user: %w", err)
-	}
-	// Get application information and verify it belongs to organization
-	var app model.Application
-	if err := conn.Where("resource_id = ? AND organization_id = ?", appID, orgID).First(&app).Error; err != nil {
-		return fmt.Errorf("failed to find application: %w", err)
-	}
 
 	// Get application info from LDAP, if after removing this member there are no other members, remove groupOfNames from the application
 	searchRequest := ldap.NewSearchRequest(
